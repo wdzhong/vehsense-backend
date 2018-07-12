@@ -6,16 +6,26 @@ Create by Weida Zhong, on July 02 2018
 version 1.0
 Python 3.x
 """
+import textwrap
 
 def helper():
-    print("List of available commands:")
+    #TODO: Wrap the description of commands for display properly.
+    print("Usage: \"help [cmd]\" for function usage. \"help --[cmd]\" for function syntax.\n")
+    print("These are the VehSense commands used for various tasks:\n")    
     cmd_list = {1: "clean", 2: "size", 3: "clients", 4: "new", 5: "backup"}
-    for i in range(len(cmd_list)-1):
+    vehSenseCommands = {"clean": "move 'bad' trip (based on the input criteria) to a \
+temporary location for manual inspection before moving to trash.\
+ Move to trash immediately if [-f] is used."}
+    vehSenseCommands["size"] = "display overall size, and size for each user"
+    vehSenseCommands["clients"] = "list all clients' names"
+    vehSenseCommands["new"] = "show newly added data since last time running this command or specified time point"
+    vehSenseCommands["backup"] = "backup data. Ask for backup location if [-d] is not specified, and save it for future use."
+    for i in range(len(cmd_list)):
         command = cmd_list[i + 1]
-        print(command, end =",")
-    print(cmd_list[len(cmd_list)])
-    print("\nEnter \"help [cmd]\" for function usage. Enter \"help --[cmd]\" for function syntax.")
-
+        prefix = command + " "
+        preferredWidth = 100
+        wrapper = textwrap.TextWrapper(initial_indent = prefix, width = preferredWidth,subsequent_indent = ' '*9)   
+        print ("{:<8} {:<15}".format(command, wrapper.fill(vehSenseCommands[command])))
 
 def clean(cmd):
     options = {}
