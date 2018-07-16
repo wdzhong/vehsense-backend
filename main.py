@@ -7,6 +7,7 @@ version 1.0
 Python 3.x
 """
 import textwrap
+import sys
 
 def helper():
     #TODO: Wrap the description of commands for display properly.
@@ -27,6 +28,7 @@ temporary location for manual inspection before moving to trash.\
         wrapper = textwrap.TextWrapper(initial_indent = prefix, width = preferredWidth,subsequent_indent = ' '*9)   
         print ("{:<8} {:<15}".format(command, wrapper.fill(vehSenseCommands[command])))
 
+
 def clean(cmd):
     options = {}
     #Options list with mandatory value
@@ -44,7 +46,7 @@ def clean(cmd):
 
 def cmd_help(cmd):
     print()
-    func_list = {"clean": clean, "size": helper, "clients": helper, "new": helper, "backup": helper}
+    func_list = {"clean": clean, "size": helper, "clients": helper, "new": helper, "backup": helper, "exit": exit}
     vehSenseCommands = {"clean": "move 'bad' trip (based on the input criteria) to a\
 temporary location for manual inspection before moving to trash.\
  Move to trash immediately if -f is used. Atleast one option needs to be specified."}
@@ -52,6 +54,8 @@ temporary location for manual inspection before moving to trash.\
     vehSenseCommands["clients"] = "list all clients' names"
     vehSenseCommands["new"] = "show newly added data since last time running this command or specified time point"
     vehSenseCommands["backup"] = "backup data. Ask for backup location if -d is not specified, and save it for future use."
+    vehSenseCommands["exit"] = "exits VehSense backend."
+        
     if cmd not in func_list:
         print ("Unrecognized command. Enter \"help --[cmd]\" for function syntax, \"help\" for list of available commands")
     else:
@@ -61,7 +65,7 @@ temporary location for manual inspection before moving to trash.\
         
 def main():
     print ("Welcome to Vehsense backend utility. Enter \"help\" for list of available commands.")
-    switcher = {"help": cmd_help, "clean": clean, "size": helper, "clients": helper, "new": helper, "backup": helper}
+    switcher = {"help": cmd_help, "clean": clean, "size": helper, "clients": helper, "new": helper, "backup": helper, "exit": exit}
     while True:
         inputString = input(">>").split(" ")
         receivedCmd = inputString[0]
@@ -69,6 +73,9 @@ def main():
             helper()
         elif receivedCmd == "help" and len(inputString) == 2:
             switcher[receivedCmd](inputString[1])            
+        elif receivedCmd == "exit":
+            print ("Exiting VehSense backend.")
+            sys.exit()    
         elif receivedCmd in switcher:
             switcher[receivedCmd]()
         else:
