@@ -21,7 +21,7 @@ def process_data(path):
     raw_rot = os.path.join(path,"raw_rot.txt")
     ref_file = os.path.join(path,"raw_obd.txt")
     empty_ref_file_size = 360
-    #TODO: Repeat the same for remaining file types   os.path.exists(acc) or os.path.exists(obd) or     
+    # os.path.exists(acc) or os.path.exists(obd)    
     if((os.stat(ref_file).st_size < empty_ref_file_size)):
         return
     for root, subdirs, files in os.walk(path):
@@ -42,13 +42,13 @@ def process_data(path):
                     grav_DF =  pd.read_csv(raw_grav)
                 elif name.endswith("raw_mag.txt"):
                     print (ref_file)
-                    #mag_DF =  pd.read_csv(raw_mag)
+                    mag_DF =  pd.read_csv(raw_mag,error_bad_lines=False,skipfooter=1)
                 elif name.endswith("raw_gyro.txt"):
                     print (ref_file)
-                    #gyro_DF =  pd.read_csv(raw_gyro)
+                    gyro_DF =  pd.read_csv(raw_gyro)
                 elif name.endswith("raw_rot.txt"):
                     print (ref_file)
-                    #rot_DF =  pd.read_csv(raw_rot)
+                    rot_DF =  pd.read_csv(raw_rot,error_bad_lines=False,skipfooter=1)
             print (acc_DF.head(5))
             ref_variable = 'timestamp' # variable of obd file  
             start_time = int(ref_DF[ref_variable].head(1))
@@ -57,9 +57,19 @@ def process_data(path):
             process_obd(obd_DF, path, start_time, end_time)
             process_gps(gps_DF, path, start_time, end_time)
             process_grav(grav_DF, path, start_time, end_time)
-            #process_mag(mag_DF, path, start_time, end_time)
+            process_gyro(gyro_DF, path, start_time, end_time)
+            process_mag(mag_DF, path, start_time, end_time)
+            process_rot(rot_DF, path, start_time, end_time)
 
 def process_acc(acc_DF, path, start_time, end_time):
+        #TODO: implement the below code for converting the timestamp to epoch.
+        """
+        import time
+        b = "2017-03-22 15:16:45.123000"
+        date_time = b
+        pattern = '%Y-%m-%d %H:%M:%S.%f'
+        epoch = int(time.mktime(time.strptime(date_time, pattern)))
+        print (epoch)"""
         raw_acc_1 = os.path.join(path,"acc_new.txt")
         acc_DF['sys_time'] = acc_DF['sys_time'].astype('int64')
         print(acc_DF['sys_time'].dtype)
@@ -126,8 +136,8 @@ def process_grav(grav_DF, path, start_time, end_time):
 
 def process_mag(mag_DF, path, start_time, end_time):
         raw_mag_1 = os.path.join(path,"mag_new.txt")
-        mag_DF['sys_time'] = mag_DF['sys_time'].astype('int64')
-        print(mag_DF['sys_time'].dtype)
+        #mag_DF['sys_time'] = mag_DF['sys_time'].astype('int64')
+        #print(mag_DF['sys_time'].dtype)
         mag_DF = mag_DF.loc[(mag_DF['sys_time'] >= start_time) & (mag_DF['sys_time'] <= end_time)]
         mag_DF['sys_time'] = mag_DF['sys_time'] - start_time
         mag_DF['sys_time'] = pd.to_datetime(mag_DF['sys_time'], unit = 'ms')
@@ -136,7 +146,35 @@ def process_mag(mag_DF, path, start_time, end_time):
         mag_DF = pd.read_csv(raw_mag_1)
         mag_DF = mag_DF.dropna()
         mag_DF1 = mag_DF.dropna()
-        mag_DF1.to_csv(raw_mag_1, index = False)     
+        mag_DF1.to_csv(raw_mag_1, index = False)
+
+def process_gyro(gyro_DF, path, start_time, end_time):
+        raw_gyro_1 = os.path.join(path,"gyro_new.txt")
+        gyro_DF['sys_time'] = gyro_DF['sys_time'].astype('int64')
+        print(gyro_DF['sys_time'].dtype)
+        gyro_DF = gyro_DF.loc[(gyro_DF['sys_time'] >= start_time) & (gyro_DF['sys_time'] <= end_time)]
+        gyro_DF['sys_time'] = gyro_DF['sys_time'] - start_time
+        gyro_DF['sys_time'] = pd.to_datetime(gyro_DF['sys_time'], unit = 'ms')
+        gyro_DF = gyro_DF.resample(sampling_rate, on='sys_time').mean()
+        gyro_DF.to_csv(raw_gyro_1)
+        gyro_DF = pd.read_csv(raw_gyro_1)
+        gyro_DF = gyro_DF.dropna()
+        gyro_DF1 = gyro_DF.dropna()
+        gyro_DF1.to_csv(raw_gyro_1, index = False) 
+        
+def process_rot(rot_DF, path, start_time, end_time):
+        raw_rot_1 = os.path.join(path,"rot_new.txt")
+        rot_DF['sys_time'] = rot_DF['sys_time'].astype('int64')
+        print(rot_DF['sys_time'].dtype)
+        rot_DF = rot_DF.loc[(rot_DF['sys_time'] >= start_time) & (rot_DF['sys_time'] <= end_time)]
+        rot_DF['sys_time'] = rot_DF['sys_time'] - start_time
+        rot_DF['sys_time'] = pd.to_datetime(rot_DF['sys_time'], unit = 'ms')
+        rot_DF = rot_DF.resample(sampling_rate, on='sys_time').mean()
+        rot_DF.to_csv(raw_rot_1)
+        rot_DF = pd.read_csv(raw_rot_1)
+        rot_DF = rot_DF.dropna()
+        rot_DF1 = rot_DF.dropna()
+        rot_DF1.to_csv(raw_rot_1, index = False)                                                             
             
 def sub_dir_path (d):
     return filter(os.path.isdir,[os.path.join(d,f) for f in os.listdir(d)])
