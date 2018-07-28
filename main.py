@@ -13,7 +13,7 @@ def helper():
     #TODO: Wrap the description of commands for display properly.
     print("Usage: \"help [cmd]\" for function usage. \"help --[cmd]\" for function syntax.\n")
     print("These are the VehSense commands used for various tasks:\n")    
-    cmd_list = {1: "clean", 2: "size", 3: "clients", 4: "new", 5: "backup"}
+    cmd_list = {1: "clean", 2: "size", 3: "clients", 4: "new", 5: "backup" ,6: "exit"}
     vehSenseCommands = {"clean": "move 'bad' trip (based on the input criteria) to a \
 temporary location for manual inspection before moving to trash.\
  Move to trash immediately if [-f] is used."}
@@ -21,11 +21,12 @@ temporary location for manual inspection before moving to trash.\
     vehSenseCommands["clients"] = "list all clients' names"
     vehSenseCommands["new"] = "show newly added data since last time running this command or specified time point"
     vehSenseCommands["backup"] = "backup data. Ask for backup location if [-d] is not specified, and save it for future use."
+    vehSenseCommands["exit"] = "exits VehSense backend."
     for i in range(len(cmd_list)):
         command = cmd_list[i + 1]
-        prefix = command + " "
+        prefix = " "
         preferredWidth = 100
-        wrapper = textwrap.TextWrapper(initial_indent = prefix, width = preferredWidth,subsequent_indent = ' '*9)   
+        wrapper = textwrap.TextWrapper(initial_indent = prefix, width = preferredWidth,subsequent_indent = ' '*10)   
         print ("{:<8} {:<15}".format(command, wrapper.fill(vehSenseCommands[command])))
 
 
