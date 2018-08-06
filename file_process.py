@@ -330,8 +330,7 @@ def sub_dir_path (d):
         d : directory of data
         
     Returns:
-        List of sub-directories in the given directory.
-        
+        List of sub-directories in the given directory.   
     """
     return filter(os.path.isdir,[os.path.join(d,f) for f in os.listdir(d)])
    
