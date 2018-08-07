@@ -10,7 +10,10 @@ import textwrap
 import sys
 import shutil
 import os
+import time
+
 path = "/media/anurag/UbuntuProjects/VehSense-Dev/vehsense-backend-data"
+temp_path = "/media/anurag/UbuntuProjects/VehSense-Dev/vehsense-backend-data-temp"
 backup_path = "/media/anurag/UbuntuProjects/VehSense-Dev/vehsense-backend-data-backup"
 
 def sub_dir_path (d):
@@ -81,7 +84,6 @@ def clean_file(input_string):
             flag = True
             clean_all(move_trash,size)
         else:
-            print(i)
             size = int(input_string[i+1])
             flag = True
             clean_subfile(val[1:],size,move_trash)
@@ -103,7 +105,7 @@ def clean_subfile(filetype,size,move_trash):
                     source = subdir_datewise
                     dest1 = os.path.basename(subdir_datewise)
                     dest2 = os.path.basename(os.path.dirname(subdir_datewise))
-                    dest_f1 = os.path.join(backup_path,dest2)
+                    dest_f1 = os.path.join(temp_path,dest2)
                     dest_f2= os.path.join(dest_f1,dest1)
                     if not os.path.exists(dest_f2):
                         os.makedirs(dest_f2)
@@ -112,16 +114,68 @@ def clean_subfile(filetype,size,move_trash):
 def clean_all(move_trash,size):
     for subdir in sub_dir_path(path):
         subdirs = sub_dir_path(subdir)
-    for subdir_datewise in subdirs:
-        for root, subdirs, files in os.walk(subdir_datewise):
-            for filename in files:
-                raw_file = os.path.join(subdir_datewise,filename)
-                print(raw_file)
-                if((os.stat(raw_file).st_size) <= size):
-                    if (move_trash == True):
-                        os.remove(raw_file)
-                    else:
-                        print (subdir_datewise)
+        for subdir_datewise in subdirs:
+            sub_path = os.path.join("",subdir_datewise)
+            for root, subdirs, files in os.walk(sub_path):
+                for filename in files:
+                    raw_file = os.path.join(subdir_datewise,filename)
+                    if((os.stat(raw_file).st_size) <= size):
+                        if (move_trash == True):
+                            os.remove(raw_file)
+                        else:
+                            source = subdir_datewise
+                            dest1 = os.path.basename(subdir_datewise)
+                            dest2 = os.path.basename(os.path.dirname(subdir_datewise))
+                            dest_f1 = os.path.join(temp_path,dest2)
+                            dest_f2= os.path.join(dest_f1,dest1)
+                            if not os.path.exists(dest_f2):
+                                os.makedirs(dest_f2)
+                            shutil.move(source+"/"+filename,dest_f2)
+         
+def backup(input_string):
+    if (len(input_string) == 1):
+        print ()
+        print ("Is this the correct backup location? (Enter \"Yes\"/\"No\").")
+        print ("Enter \"main\" to go back to main")
+        print (backup_path)
+        option = input(">>")
+        if (option == "N" or option =="No"  or option =="no"):
+            print("Enter the backup location")
+            global backup_path
+            backup_path = input(">>")
+        elif (option == "Y" or option =="Yes"  or option =="Y"):
+            pass
+        elif (option == "main"):
+            return
+        elif (option == "exit"):
+            print ("Exiting VehSense backend.")
+            sys.exit()        
+        else:
+            print ("Please enter correct input.")
+            backup(input_string)
+            return
+    elif (len(input_string) == 3):
+        if(input_string[1] == "-d"):
+            backup_path = input_string[2]
+        else:
+            print ("Enter the correct option")
+            input_string = ["backup"]
+            backup(input_string)
+            return
+    else:
+        print ("Enter the correct options")
+        input_string = ["backup"]
+        backup(input_string)
+        return
+    print("Copying following files to backup location:")
+    for subdir in sub_dir_path(path):
+        subdirs = sub_dir_path(subdir)
+        for subdir_datewise in subdirs:
+                sub_path = os.path.join("",subdir_datewise)
+                for root, subdirs, files in os.walk(sub_path):
+                    for filename in files:
+                        raw_file = os.path.join(subdir_datewise,filename)
+                        print(raw_file)
                         source = subdir_datewise
                         dest1 = os.path.basename(subdir_datewise)
                         dest2 = os.path.basename(os.path.dirname(subdir_datewise))
@@ -129,9 +183,28 @@ def clean_all(move_trash,size):
                         dest_f2= os.path.join(dest_f1,dest1)
                         if not os.path.exists(dest_f2):
                             os.makedirs(dest_f2)
-                        shutil.move(source+"/"+filename,dest_f2)
-    
-            
+                        shutil.copy(source+"/"+filename,dest_f2)
+    print ()
+    print ("Backup complete.")
+
+def new(input_string):
+    specified_time = input_string[2]+" "+input_string[3]
+    #date_time = '29.08.2011 11:05:02'
+    pattern = '%d.%m.%Y %H:%M:%S'
+    epoch = float(time.mktime(time.strptime(specified_time, pattern)))
+    print(epoch)
+    for subdir in sub_dir_path(path):
+        subdirs = sub_dir_path(subdir)
+        for subdir_datewise in subdirs:
+            sub_path = os.path.join("",subdir_datewise)
+            for root, subdirs, files in os.walk(sub_path):
+                for filename in files:
+                    raw_file = os.path.join(subdir_datewise,filename)
+                    print(filename)
+                    if(os.path.getmtime(raw_file) > epoch):
+                        print(raw_file)
+
+
 def cmd_help(cmd):
     print()
     func_list = {"clean": clean, "size": helper, "clients": helper, "new": helper, "backup": helper, "exit": exit}
@@ -153,7 +226,7 @@ temporary location for manual inspection before moving to trash.\
         
 def main():
     print ("Welcome to Vehsense backend utility. Enter \"help\" for list of available commands.")
-    switcher = {"help": cmd_help, "clean": clean_file, "size": helper, "clients": helper, "new": helper, "backup": helper, "exit": exit}
+    switcher = {"help": cmd_help, "clean": clean_file, "size": helper, "clients": helper, "new": new, "backup": backup, "exit": exit}
     while True:
         inputString = input(">>").split(" ")
         receivedCmd = inputString[0]
