@@ -11,6 +11,8 @@ import sys
 import shutil
 import os
 import time
+from time import gmtime, strftime
+
 
 path = "/media/anurag/UbuntuProjects/VehSense-Dev/vehsense-backend-data"
 temp_path = "/media/anurag/UbuntuProjects/VehSense-Dev/vehsense-backend-data-temp"
@@ -187,23 +189,43 @@ def backup(input_string):
     print ()
     print ("Backup complete.")
 
+from datetime import datetime
+from dateutil import tz
+
 def new(input_string):
-    specified_time = input_string[2]+" "+input_string[3]
-    #date_time = '29.08.2011 11:05:02'
-    pattern = '%d.%m.%Y %H:%M:%S'
+    pattern = '%Y-%m-%d %H:%M:%S'
+    from_zone = tz.gettz('UTC')
+    to_zone = tz.gettz('America/New_York')
+
+    if (len(input_string) == 1):
+        my_file = open(os.path.join("/media/anurag/UbuntuProjects/VehSense-Dev/","new_time.txt"),"r")
+        specified_time = my_file.read()
+        my_file.close()
+    else:
+        specified_time = input_string[2]+" "+input_string[3]
+    with open(os.path.join("/media/anurag/UbuntuProjects/VehSense-Dev/","new_time.txt"),"w") as my_file:
+        # my_file.write(strftime(pattern, gmtime()))
+        utc = datetime.utcnow()
+        utc = str(utc).split(".")[0]
+        utc = datetime.strptime(utc, '%Y-%m-%d %H:%M:%S')
+        utc = utc.replace(tzinfo=from_zone)
+        central = utc.astimezone(to_zone)
+        my_file.write(str(central))
+        my_file.close()
     epoch = float(time.mktime(time.strptime(specified_time, pattern)))
-    print(epoch)
+    print("Data created after " + specified_time)
     for subdir in sub_dir_path(path):
         subdirs = sub_dir_path(subdir)
         for subdir_datewise in subdirs:
             sub_path = os.path.join("",subdir_datewise)
+            print("")
+            print(subdir_datewise)
             for root, subdirs, files in os.walk(sub_path):
                 for filename in files:
                     raw_file = os.path.join(subdir_datewise,filename)
-                    print(filename)
                     if(os.path.getmtime(raw_file) > epoch):
                         print(raw_file)
-
+                        
 
 def cmd_help(cmd):
     print()
@@ -223,10 +245,25 @@ temporary location for manual inspection before moving to trash.\
         print("Description:", vehSenseCommands[cmd],"\n")
         print("Options:") 
         func_list[cmd]("syntax")
-        
+
+def get_size(start_path = '.'):
+    total_size = 0
+    for dirpath, dirnames, filenames in os.walk(start_path):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            total_size += os.path.getsize(fp)
+    return total_size/float(1000)
+
+def size(cmd):
+    print("Overall size: ")
+    print(get_size(path), "KB")
+    for subdir in sub_dir_path(path):
+        print(os.path.basename(subdir),"size")
+        print(get_size(subdir), "KB")
+                        
 def main():
     print ("Welcome to Vehsense backend utility. Enter \"help\" for list of available commands.")
-    switcher = {"help": cmd_help, "clean": clean_file, "size": helper, "clients": helper, "new": new, "backup": backup, "exit": exit}
+    switcher = {"help": cmd_help, "clean": clean_file, "size": size, "clients": helper, "new": new, "backup": backup, "exit": exit}
     while True:
         inputString = input(">>").split(" ")
         receivedCmd = inputString[0]
