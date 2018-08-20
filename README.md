@@ -2,6 +2,7 @@
 Deal with data collected from vehsense app.
 
 The program should be running like a prompt which can accept predefined commands, e.g.
+
 - **help**: list all available commands and their short descriptions.
 - **help [cmd]**: show details of `cmd` usage
 - **backup [-d directory]**: backup data. Ask for backup location if -d is not specified, and save it for future use.
