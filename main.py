@@ -57,23 +57,7 @@ temporary location for manual inspection before moving to trash.\
         preferredWidth = 100
         wrapper = textwrap.TextWrapper(initial_indent = prefix, width = preferredWidth,subsequent_indent = ' '*10)   
         print ("{:<8} {:<15}".format(command, wrapper.fill(vehSenseCommands[command])))
-
-
-def clean(cmd):
-    options = {}
-    #Options list with mandatory value
-    options["[-acc]"] = False
-    options["[-gps]"] = False
-    options["[-gyro]"] = False
-    options["[-obd]"] = False
-    options["[--all]"] = False
-    options["[-f]"] = False
-    if cmd == "options":
-        print (options)
-    elif cmd == "syntax":
-        for i in options:
-            print (i, end =",")
-            
+          
 def clean_file(input_string):
     """
     Performs the operations for the clean command, i.e, moves the files to a temporary folder or moves them to trash depending on the minimum size specified.
@@ -93,7 +77,11 @@ def clean_file(input_string):
                 flag = False
                 continue
             if (val == "clean"):
-                continue
+                if(len(input_string) != 1):
+                    continue
+                else:
+                    print("Enter correct options")
+                    return
             if(input_string[len(input_string)-1] == "-f"):
                 move_trash =  True
             if(val == "--all"):
@@ -101,9 +89,15 @@ def clean_file(input_string):
                 flag = True
                 clean_all(move_trash,size)
             elif((val == "-acc") or (val == "-gps") or (val == "-gyro") or (val == "-obd") or (val == "-grav") or (val == "-mag") or (val == "-rot")):
-                size = int(input_string[i+1])
-                flag = True
-                clean_subfile(val[1:],size,move_trash)
+                try:
+                    size = int(input_string[i+1])
+                    flag = True
+                    clean_subfile(val[1:],size,move_trash)
+                except:
+                    print("Enter correct options")
+                    return
+            elif(val == "-f"):
+                continue
             else:
                 print("Enter the correct options")
                 return
@@ -125,12 +119,12 @@ def clean_subfile(filetype,size,move_trash):
     for subdir_datewise in subdirs:
         raw_file = os.path.join(subdir_datewise,filename)
         if(os.path.exists(raw_file)):
-            print (os.stat(raw_file).st_size)
             if((os.stat(raw_file).st_size) <= size):
                 if (move_trash == True):
+                    print("Deleting file ",raw_file)
                     os.remove(raw_file)
                 else:
-                    print (subdir_datewise)
+                    print ("Moving file ",raw_file)
                     source = subdir_datewise
                     dest1 = os.path.basename(subdir_datewise)
                     dest2 = os.path.basename(os.path.dirname(subdir_datewise))
@@ -242,11 +236,11 @@ def new(input_string):
         input_string (str): array of options for the new command.
 
     """
-    
     if(input_string == "syntax"):
-        print("new [YYYY-MM-DD HH-MM-SS] to display the files created after the provided time")
+        print("new -t [YYYY-MM-DD HH:MM:SS] to display the files created after the provided time")
     else:
-        pattern = '%Y-%m-%d %H:%M:%S'
+        pattern = '%Y-%m-%d %H:%M:%S-04:00'
+        pattern1 = '%Y-%m-%d %H:%M:%S'
         from_zone = tz.gettz('UTC')
         to_zone = tz.gettz('America/New_York')
     
@@ -254,25 +248,32 @@ def new(input_string):
             my_file = open(os.path.join(parent_path,"new_time.txt"),"r")
             specified_time = my_file.read()
             my_file.close()
+        elif (len(input_string) != 4):
+            print("Please enter correct syntax")
+            return
         else:
             specified_time = input_string[2]+" "+input_string[3]
         with open(os.path.join(parent_path,"new_time.txt"),"w") as my_file:
-            # my_file.write(strftime(pattern, gmtime()))
             utc = datetime.utcnow()
             utc = str(utc).split(".")[0]
             utc = datetime.strptime(utc, '%Y-%m-%d %H:%M:%S')
             utc = utc.replace(tzinfo=from_zone)
-            central = utc.astimezone(to_zone)
-            my_file.write(str(central))
+            central =str(utc.astimezone(to_zone))
+            my_file.write(central)
             my_file.close()
-        epoch = float(time.mktime(time.strptime(specified_time, pattern)))
+        try:
+            epoch = float(time.mktime(time.strptime(specified_time, pattern1)))
+        except:
+            print ("Error in parsing time. Please check syntax.")
+            return
         print("Data created after " + specified_time)
         for subdir in sub_dir_path(path):
             subdirs = sub_dir_path(subdir)
+            print(" ")
+            dest1 = os.path.basename(subdir)
+            print("User ",dest1)
             for subdir_datewise in subdirs:
-                sub_path = os.path.join("",subdir_datewise)
-                print("")
-                print(subdir_datewise)
+                sub_path = os.path.join("",subdir_datewise)                
                 for root, subdirs, files in os.walk(sub_path):
                     for filename in files:
                         raw_file = os.path.join(subdir_datewise,filename)
@@ -332,12 +333,15 @@ def size(cmd):
     """
     if(cmd == "syntax"):
         print("size")
+    elif(len(cmd) != 1):
+        print("Please enter correct syntax.")
     else:
+        print(cmd)
         print("Overall size: ")
         print(get_size(path), "KB")
         for subdir in sub_dir_path(path):
-            print(os.path.basename(subdir),"size")
-            print(get_size(subdir), "KB")
+            print(os.path.basename(subdir))
+            print("size",get_size(subdir), "KB")
                         
 def main():
     """
