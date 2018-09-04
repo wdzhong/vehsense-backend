@@ -15,7 +15,9 @@ import os
 import time
 from datetime import datetime
 from dateutil import tz
-from time import gmtime, strftime
+from time import gmtime,strftime
+from helper import decompress_file
+
 
 parent_path = "/media/anurag/UbuntuProjects/VehSense-Dev" #Parent directory of VehSense data
 path = "/media/anurag/UbuntuProjects/VehSense-Dev/vehsense-backend-data" #VehSense data directory
@@ -117,7 +119,7 @@ def clean_subfile(filetype,size,move_trash):
     for subdir in sub_dir_path(path):
         subdirs = sub_dir_path(subdir)
     for subdir_datewise in subdirs:
-        raw_file = os.path.join(subdir_datewise,filename)
+        raw_file = os.path.join("/media/anurag/UbuntuProjects/VehSense-Dev/vehsense-backend-data",filename)
         if(os.path.exists(raw_file)):
             if((os.stat(raw_file).st_size) <= size):
                 if (move_trash == True):
@@ -349,7 +351,7 @@ def main():
         
     """
     print ("Welcome to Vehsense backend utility. Enter \"help\" for list of available commands.")
-    switcher = {"clean": clean_file, "size": size, "new": new, "backup": backup, "exit": exit}    
+    switcher = {"clean": clean_file, "size": size, "new": new, "backup": backup, "exit": exit, "unzip": decompress_file}    
     while True:
         inputString = input(">>").split(" ")
         receivedCmd = inputString[0]
