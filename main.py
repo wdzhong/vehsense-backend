@@ -1,3 +1,4 @@
+
 """
 The entrance of the project.
 TODO: docstring with more details
@@ -18,11 +19,10 @@ from dateutil import tz
 from time import gmtime,strftime
 from helper import decompress_file
 
-
-parent_path = "/media/anurag/UbuntuProjects/VehSense-Dev" #Parent directory of VehSense data
-path = "/media/anurag/UbuntuProjects/VehSense-Dev/vehsense-backend-data" #VehSense data directory
-temp_path = "/media/anurag/UbuntuProjects/VehSense-Dev/vehsense-backend-data-temp" #temporary folder for storing the data after clean if -f is specified
-backup_path = "/media/anurag/UbuntuProjects/VehSense-Dev/vehsense-backend-data-backup" # path of backup folder
+parent_path = os.path.dirname(os.path.realpath(__file__)) #Parent directory of VehSense data
+data_path = os.path.join(parent_path,"vehsense-backend-data") #VehSense data directory
+temp_path = os.path.join(parent_path,"vehsense-backend-data-temp") #temporary folder for storing the data after clean if -f is specified
+backup_path = os.path.join(parent_path,"vehsense-backend-data-backup") # path of backup folder
 
 def sub_dir_path (d):
     """
@@ -44,7 +44,7 @@ def helper():
     """    
     print("Usage: \"help [cmd]\" for function syntax.\n")
     print("These are the VehSense commands used for various tasks:\n")    
-    cmd_list = {1: "help cmd", 2: "clean", 3: "size", 4: "new", 5: "backup" ,6: "exit"}
+    cmd_list = {1: "help cmd", 2: "clean", 3: "size", 4: "new", 5: "backup" ,6: "exit",7: "unzip"}
     vehSenseCommands = {"clean": "move 'bad' trip (based on the input criteria) to a \
 temporary location for manual inspection before moving to trash.\
  Move to trash immediately if [-f] is used."}
@@ -53,6 +53,7 @@ temporary location for manual inspection before moving to trash.\
     vehSenseCommands["new"] = "show newly added data since last time running this command or specified time point"
     vehSenseCommands["backup"] = "backup data. Ask for backup location if [-d] is not specified, and save it for future use."
     vehSenseCommands["exit"] = "exits VehSense backend."
+    vehSenseCommands["unzip"] = "decompress the specified file, or compressed files under specified directory."
     for i in range(len(cmd_list)):
         command = cmd_list[i + 1]
         prefix = " "
@@ -116,10 +117,10 @@ def clean_subfile(filetype,size,move_trash):
     """
     switcher = {"acc": "raw_acc.txt", "obd": "raw_obd.txt", "gps": "gps.txt", "gyro": "raw_gyro.txt", "grav": "raw_grav.txt", "mag": "raw_mag.txt", "rot": "raw_rot.txt"}
     filename = switcher[filetype]
-    for subdir in sub_dir_path(path):
+    for subdir in sub_dir_path(data_path):
         subdirs = sub_dir_path(subdir)
     for subdir_datewise in subdirs:
-        raw_file = os.path.join("/media/anurag/UbuntuProjects/VehSense-Dev/vehsense-backend-data",filename)
+        raw_file = os.path.join(data_path,filename)
         if(os.path.exists(raw_file)):
             if((os.stat(raw_file).st_size) <= size):
                 if (move_trash == True):
@@ -145,7 +146,7 @@ def clean_all(move_trash,size):
         size (int): the threshold size of files in bytes.
 
     """
-    for subdir in sub_dir_path(path):
+    for subdir in sub_dir_path(data_path):
         subdirs = sub_dir_path(subdir)
         for subdir_datewise in subdirs:
             sub_path = os.path.join("",subdir_datewise)
@@ -211,7 +212,7 @@ def backup(input_string):
             backup(input_string)
             return
         print("Copying following files to backup location:")
-        for subdir in sub_dir_path(path):
+        for subdir in sub_dir_path(data_path):
             subdirs = sub_dir_path(subdir)
             for subdir_datewise in subdirs:
                     sub_path = os.path.join("",subdir_datewise)
@@ -269,7 +270,7 @@ def new(input_string):
             print ("Error in parsing time. Please check syntax.")
             return
         print("Data created after " + specified_time)
-        for subdir in sub_dir_path(path):
+        for subdir in sub_dir_path(data_path):
             subdirs = sub_dir_path(subdir)
             print(" ")
             dest1 = os.path.basename(subdir)
@@ -291,7 +292,7 @@ def cmd_help(cmd):
 
     """
     print()
-    func_list = {"clean": clean_file, "size": size, "new": new, "backup": backup}
+    func_list = {"clean": clean_file, "size": size, "new": new, "backup": backup, "unzip": decompress_file}
     vehSenseCommands = {"clean": "move 'bad' trip (based on the input criteria) to a\
 temporary location for manual inspection before moving to trash.\
  Move to trash immediately if -f is used. Atleast one option needs to be specified."}
@@ -299,6 +300,7 @@ temporary location for manual inspection before moving to trash.\
     vehSenseCommands["new"] = "show newly added data since last time running this command or specified time point"
     vehSenseCommands["backup"] = "backup the files to the specified path and store the path for future use or backup the data to the stored path if [-d] is not specified."
     vehSenseCommands["exit"] = "exits VehSense backend."
+    vehSenseCommands["unzip"] = "decompress the specified file, or compressed files under specified directory. If --delete is set to be True, then the original compressed file(s) will be deleted after decompression. If --merge is True, then files with the same prefix will be merged after decompression."
         
     if cmd not in func_list:
         print ("Unrecognized command. Enter \"help [cmd]\" for function syntax, \"help\" for list of available commands")
@@ -340,8 +342,8 @@ def size(cmd):
     else:
         print(cmd)
         print("Overall size: ")
-        print(get_size(path), "KB")
-        for subdir in sub_dir_path(path):
+        print(get_size(data_path), "KB")
+        for subdir in sub_dir_path(data_path):
             print(os.path.basename(subdir))
             print("size",get_size(subdir), "KB")
                         
@@ -371,4 +373,3 @@ def main():
 if __name__ == '__main__':
     #TODO: accept parameters or prompt the user to input, e.g. directory of data
     main()
-    
