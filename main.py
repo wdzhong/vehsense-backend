@@ -353,7 +353,11 @@ def main():
         
     """
     print ("Welcome to Vehsense backend utility. Enter \"help\" for list of available commands.")
+<<<<<<< HEAD
     switcher = {"clean": clean_file, "size": size, "new": new, "backup": backup, "exit": exit, "unzip": decompress_file}    
+=======
+    switcher = {"clean": clean_file, "size": size, "new": new, "backup": backup, "unzip": decompress_file}    
+>>>>>>> master
     while True:
         inputString = input(">>").split(" ")
         receivedCmd = inputString[0]
