@@ -10,7 +10,8 @@ sampling_rate = '100L'
 ref_file = "raw_obd.txt"
 rolling_window_size = 300
 
-path = "/media/anurag/UbuntuProjects/VehSense-Dev/vehsense-backend-data"
+parent_path = os.path.dirname(os.path.realpath(__file__)) #Parent directory of VehSense data
+path = os.path.join(parent_path,"vehsense-backend-data") #VehSense data directory
 
 def process_data(path):
     """
