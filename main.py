@@ -346,6 +346,10 @@ def size(cmd):
         for subdir in sub_dir_path(data_path):
             print(os.path.basename(subdir))
             print("size",get_size(subdir), "KB")
+            
+def preprocess(cmd):
+    import file_process
+    file_process.process_data_main(data_path)
                         
 def main():
     """
@@ -353,7 +357,7 @@ def main():
         
     """
     print ("Welcome to Vehsense backend utility. Enter \"help\" for list of available commands.")
-    switcher = {"clean": clean_file, "size": size, "new": new, "backup": backup, "unzip": decompress_file}    
+    switcher = {"clean": clean_file, "size": size, "new": new, "backup": backup, "unzip": decompress_file, "preprocess": preprocess}      
     while True:
         inputString = input(">>").split(" ")
         receivedCmd = inputString[0]
