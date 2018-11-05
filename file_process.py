@@ -8,7 +8,7 @@ import calendar
 
 sampling_rate = '100L'
 ref_file = "raw_obd.txt"
-rolling_window_size = 300
+rolling_window_size = 100
 
 parent_path = os.path.dirname(os.path.realpath(__file__)) #Parent directory of VehSense data
 path = os.path.join(parent_path,"vehsense-backend-data") #VehSense data directory
@@ -132,27 +132,37 @@ def process_obd(obd_DF, ref_DF, path, start_time, end_time):
     raw_obd_2 = os.path.join(path,"obd_smoothed.txt")
     obd_DF['timestamp'] = obd_DF['timestamp'] - start_time
     obd_DF['timestamp'] = pd.to_datetime(obd_DF['timestamp'], unit = 'ms')
-#    obd_DF['timestamp'] = obd_DF['timestamp'].astype(np.int64)
-    obd_DF1 = obd_DF.dropna(thresh=1, axis='columns')
-    obd_DF1['RPM'] = obd_DF['RPM'].str.strip("RPM").astype('int64')
-    obd_DF1['Speed'] = obd_DF['Speed'].str.strip("km/h").astype('int64')
-    obd_DF1 = obd_DF1.rename(index=str,columns = {"timestamp":"sys_time"})
-    obd_DF1 = obd_DF1.resample(sampling_rate, on='sys_time').mean()
-    obd_DF1 = obd_DF1.dropna()
+    #obd_DF['timestamp'] = obd_DF['timestamp'].astype(np.int64)
+    obd_DF = obd_DF.dropna(thresh=1, axis='columns')
+    obd_DF['RPM'] = obd_DF['RPM'].str.strip("RPM").astype('int64')
+    obd_DF['Speed'] = obd_DF['Speed'].str.strip("km/h").astype('int64')
+    obd_DF = obd_DF.rename(index=str,columns = {"timestamp":"sys_time"})
+    obd_DF = obd_DF.resample(sampling_rate, on='sys_time').mean()
+    obd_DF = obd_DF.dropna()
     #TODO: include quote in fields for to_csv
-    obd_DF1['RPM'] = obd_DF1['RPM'].astype('str') + 'RPM'
-    obd_DF1['Speed'] = obd_DF1['Speed'].astype('str') + 'km/h'
-    obd_DF1.to_csv(raw_obd_1)
-    obd_DF1 = pd.read_csv(raw_obd_1)
+    obd_DF['RPM'] = obd_DF['RPM'].astype('str') + 'RPM'
+    obd_DF['Speed'] = obd_DF['Speed'].astype('str') + 'km/h'
+    obd_DF.to_csv(raw_obd_1)
+    obd_DF = pd.read_csv(raw_obd_1)
     pattern = '%Y-%m-%d %H:%M:%S.%f'
-    for i in obd_DF1.index.tolist():
-        a = datetime.strptime(obd_DF1.loc[i,'sys_time'], pattern)
+    for i in obd_DF.index.tolist():
+        a = datetime.strptime(obd_DF.loc[i,'sys_time'], pattern)
         a = int(a.microsecond/1000)
-        x = obd_DF1.at[i,'sys_time']
-        obd_DF1.at[i,'sys_time'] = a + (int(calendar.timegm(time.strptime(x, pattern))) * 10)
-    obd_DF1.to_csv(raw_obd_1,index = False)
-    obd_DF1 = obd_DF1.rename(index=str,columns = {"sys_time":"timestamp"})
+        x = obd_DF.at[i,'sys_time']
+        obd_DF.at[i,'sys_time'] = a + (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
+    obd_DF.to_csv(raw_obd_1,index = False)
+    obd_DF1 = pd.read_csv(raw_obd_1)
+    obd_DF1 = obd_DF1.dropna()
+    obd_DF1 = obd_DF1.interpolate(method='linear')
     obd_DF1 = obd_DF1.rolling(rolling_window_size, min_periods=1).mean()
+    for i in obd_DF1.index.tolist():
+        x = obd_DF1.at[i,'sys_time']
+        if (x % 100 >= 50):
+            obd_DF1.at[i,'sys_time'] = int(x / 100) * 100 + 100
+        else:
+            obd_DF1.at[i,'sys_time'] = int(x / 100) * 100
+    obd_DF1 = obd_DF1.rename(index=str,columns = {"sys_time":"timestamp"})
+    obd_DF1 = obd_DF1.drop_duplicates(subset=['timestamp'], keep=False)
     obd_DF1.to_csv(raw_obd_2,index = False)
     
 def process_gps(gps_DF,ref_DF, path, start_time, end_time):
@@ -335,14 +345,14 @@ def process_rot(rot_DF,ref_DF, path, start_time, end_time):
     rot_DF.to_csv(raw_rot_1)
     rot_DF = pd.read_csv(raw_rot_1)
     rot_DF = rot_DF.dropna()
-    rot_DF1 = rot_DF.dropna()
     pattern = '%Y-%m-%d %H:%M:%S.%f'
-    for i in rot_DF1.index.tolist():
-        a = datetime.strptime(rot_DF1.loc[i,'sys_time'], pattern)
+    for i in rot_DF.index.tolist():
+        a = datetime.strptime(rot_DF.loc[i,'sys_time'], pattern)
         a = int(a.microsecond/1000)
-        x = rot_DF1.at[i,'sys_time']
-        rot_DF1.at[i,'sys_time'] = a + (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
-    rot_DF1.to_csv(raw_rot_1,index = False)
+        x = rot_DF.at[i,'sys_time']
+        rot_DF.at[i,'sys_time'] = a + (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
+    rot_DF.to_csv(raw_rot_1,index = False)
+    rot_DF1 = rot_DF.dropna()
     rot_DF1 = rot_DF.merge(ref_DF,how = 'left')
     rot_DF1 = rot_DF.interpolate(method='linear')
     rot_DF1 = rot_DF.rolling(rolling_window_size, min_periods=1).mean()
