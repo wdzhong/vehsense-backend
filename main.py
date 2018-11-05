@@ -18,6 +18,7 @@ from datetime import datetime
 from dateutil import tz
 from time import gmtime,strftime
 from helper import decompress_file
+global backup_path
 
 parent_path = os.path.dirname(os.path.realpath(__file__)) #Parent directory of VehSense data
 data_path = os.path.join(parent_path,"vehsense-backend-data") #VehSense data directory
@@ -185,7 +186,6 @@ def backup(input_string):
             option = input(">>")
             if (option == "N" or option =="No"  or option =="no" or option == "NO"):
                 print("Enter the backup location")
-                global backup_path
                 backup_path = input(">>")
             elif (option == "Y" or option =="Yes"  or option =="yes" or option =="YES"):
                 pass
@@ -292,7 +292,7 @@ def cmd_help(cmd):
 
     """
     print()
-    func_list = {"clean": clean_file, "size": size, "new": new, "backup": backup, "unzip": decompress_file}
+    func_list = {"clean": clean_file, "size": size, "new": new, "backup": backup, "unzip": decompress_file, "preprocess": preprocess}
     vehSenseCommands = {"clean": "move 'bad' trip (based on the input criteria) to a\
 temporary location for manual inspection before moving to trash.\
  Move to trash immediately if -f is used. Atleast one option needs to be specified."}
@@ -301,7 +301,8 @@ temporary location for manual inspection before moving to trash.\
     vehSenseCommands["backup"] = "backup the files to the specified path and store the path for future use or backup the data to the stored path if [-d] is not specified."
     vehSenseCommands["exit"] = "exits VehSense backend."
     vehSenseCommands["unzip"] = "decompress the specified file, or compressed files under specified directory. If --delete is set to be True, then the original compressed file(s) will be deleted after decompression. If --merge is True, then files with the same prefix will be merged after decompression."
-        
+    vehSenseCommands["preprocess"] = "preprcess files."        
+    
     if cmd not in func_list:
         print ("Unrecognized command. Enter \"help [cmd]\" for function syntax, \"help\" for list of available commands")
     else:
@@ -346,6 +347,10 @@ def size(cmd):
         for subdir in sub_dir_path(data_path):
             print(os.path.basename(subdir))
             print("size",get_size(subdir), "KB")
+            
+def preprocess(cmd):
+    import file_process
+    file_process.process_data_main(data_path)
                         
 def main():
     """
@@ -353,11 +358,7 @@ def main():
         
     """
     print ("Welcome to Vehsense backend utility. Enter \"help\" for list of available commands.")
-<<<<<<< HEAD
-    switcher = {"clean": clean_file, "size": size, "new": new, "backup": backup, "exit": exit, "unzip": decompress_file}    
-=======
-    switcher = {"clean": clean_file, "size": size, "new": new, "backup": backup, "unzip": decompress_file}    
->>>>>>> master
+    switcher = {"clean": clean_file, "size": size, "new": new, "backup": backup, "unzip": decompress_file, "preprocess": preprocess}      
     while True:
         inputString = input(">>").split(" ")
         receivedCmd = inputString[0]
