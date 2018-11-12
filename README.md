@@ -1,4 +1,7 @@
 # vehsense-backend
+
+[![CircleCI](https://circleci.com/gh/jianpingbadao/vehsense-backend.svg?style=svg)](https://circleci.com/gh/jianpingbadao/vehsense-backend)
+
 Deal with data collected from vehsense app.
 
 The program should be running like a prompt which can accept predefined commands, e.g.
