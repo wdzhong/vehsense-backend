@@ -1,0 +1,2 @@
+"timestamp","system_time","lat","lon","speed","bearing","provider"
+"1519416036434","1519416036492","43.0027193","-78.7871911","0.0","0.0","network"
