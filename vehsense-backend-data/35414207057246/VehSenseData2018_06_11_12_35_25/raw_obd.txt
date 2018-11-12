@@ -1,0 +1,1 @@
+"timestamp","RPM","Speed","Consumption_Rate","AirFuelRatio","ThrottlePosition","MassAirFlow","FuelType","FuelLevel","FuelTrim","WidebandAirFuelRatio","EngineLoad","AirIntakeTemperature","AmbientAirTemperature","EngineCoolantTemperature","FuelPressure","DistanceMIL","DistanceSinceCCC","EquivalentRatio","IgnitionMonitor","ModuleVoltage","PendingTroubleCodes"
