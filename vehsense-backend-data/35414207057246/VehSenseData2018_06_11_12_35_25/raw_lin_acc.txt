@@ -1,1 +1,0 @@
-"timestamp","sys_time","abs_timestamp","raw_x_lin_acc","raw_y_lin_acc","raw_z_lin_acc"
