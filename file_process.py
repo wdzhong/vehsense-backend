@@ -111,7 +111,7 @@ def process_acc(acc_DF,ref_DF, path, start_time, end_time):
     acc_DF1 = acc_DF1.merge(ref_DF,how = 'left')
     acc_DF1 = acc_DF1.interpolate(method='linear')
     acc_DF1 = acc_DF1.rolling(rolling_window_size, min_periods=1).mean()
-    acc_DF1 = acc_DF1[['sys_time','timestamp','abs_timestamp','raw_x_acc','raw_y_acc','raw_z_acc']]
+    acc_DF1 = acc_DF1[['sys_time','abs_timestamp','raw_x_acc','raw_y_acc','raw_z_acc']]
     acc_DF1.to_csv(raw_acc_2,index = False)
         
 def process_obd(obd_DF, ref_DF, path, start_time, end_time):
@@ -140,18 +140,18 @@ def process_obd(obd_DF, ref_DF, path, start_time, end_time):
     obd_DF = obd_DF.resample(sampling_rate, on='sys_time').mean()
     obd_DF = obd_DF.dropna()
     #TODO: include quote in fields for to_csv
+    obd_DF.to_csv(raw_obd_1)
+    obd_DF1 = pd.read_csv(raw_obd_1)
     obd_DF['RPM'] = obd_DF['RPM'].astype('str') + 'RPM'
     obd_DF['Speed'] = obd_DF['Speed'].astype('str') + 'km/h'
     obd_DF.to_csv(raw_obd_1)
-    obd_DF = pd.read_csv(raw_obd_1)
     pattern = '%Y-%m-%d %H:%M:%S.%f'
-    for i in obd_DF.index.tolist():
-        a = datetime.strptime(obd_DF.loc[i,'sys_time'], pattern)
+    for i in obd_DF1.index.tolist():
+        a = datetime.strptime(obd_DF1.loc[i,'sys_time'], pattern)
         a = int(a.microsecond/1000)
-        x = obd_DF.at[i,'sys_time']
-        obd_DF.at[i,'sys_time'] = a + (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
-    obd_DF.to_csv(raw_obd_1,index = False)
-    obd_DF1 = pd.read_csv(raw_obd_1)
+        x = obd_DF1.at[i,'sys_time']
+        obd_DF1.at[i,'sys_time'] = a + (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
+    obd_DF1.to_csv(raw_obd_1,index = False)
     obd_DF1 = obd_DF1.dropna()
     obd_DF1 = obd_DF1.interpolate(method='linear')
     obd_DF1 = obd_DF1.rolling(rolling_window_size, min_periods=1).mean()
@@ -192,20 +192,19 @@ def process_gps(gps_DF,ref_DF, path, start_time, end_time):
     gps_DF = gps_DF.resample(sampling_rate, on = 'system_time').mean()
     pattern = '%Y-%m-%d %H:%M:%S.%f'
     gps_DF.to_csv(raw_gps_1)
-    gps_DF = pd.read_csv(raw_gps_1)
-    for i in gps_DF.index.tolist():
-        a = datetime.strptime(gps_DF.loc[i,'system_time'], pattern)
+    gps_DF1 = pd.read_csv(raw_gps_1)
+    for i in gps_DF1.index.tolist():
+        a = datetime.strptime(gps_DF1.loc[i,'system_time'], pattern)
         a = int(a.microsecond / 1000)
-        x = gps_DF.at[i,'system_time']
-        gps_DF.at[i,'system_time'] = a + (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
-    gps_DF.to_csv(raw_gps_1,index = False)
-    gps_DF = gps_DF.dropna()
-    gps_DF1 = gps_DF.dropna()
+        x = gps_DF1.at[i,'system_time']
+        gps_DF1.at[i,'system_time'] = a + (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
+    gps_DF1.to_csv(raw_gps_1,index = False)
+    gps_DF1 = gps_DF1.dropna()
     gps_DF1 = gps_DF1.merge(ref_DF,how = 'left')
     gps_DF1 = gps_DF1.interpolate(method='linear')
+    gps_DF1 = gps_DF1[["system_time","lat","lon","speed","bearing"]]
     gps_DF1 = gps_DF1.rolling(rolling_window_size, min_periods=1).mean()
-    gps_DF1 = gps_DF1[["timestamp","system_time","lat","lon","speed","bearing"]]
-    gps_DF1.to_csv(raw_gps_2,index = False) 
+    gps_DF1.to_csv(raw_gps_2,index = False)
                    
 def process_grav(grav_DF,ref_DF, path, start_time, end_time):
     """
@@ -243,7 +242,7 @@ def process_grav(grav_DF,ref_DF, path, start_time, end_time):
     grav_DF1 = grav_DF1.merge(ref_DF,how = 'left')
     grav_DF1 = grav_DF1.interpolate(method='linear')
     grav_DF1 = grav_DF1.rolling(rolling_window_size, min_periods=1).mean()
-    grav_DF1 = grav_DF1[["sys_time","timestamp","abs_timestamp","raw_x_grav","raw_y_grav","raw_z_grav"]]
+    grav_DF1 = grav_DF1[["sys_time","raw_x_grav","raw_y_grav","raw_z_grav"]]
     grav_DF1.to_csv(raw_grav_2,index = False) 
                
 def process_mag(mag_DF,ref_DF, path, start_time, end_time):
@@ -280,7 +279,7 @@ def process_mag(mag_DF,ref_DF, path, start_time, end_time):
     mag_DF1 = mag_DF1.merge(ref_DF,how = 'left')
     mag_DF1 = mag_DF1.interpolate(method='linear')
     mag_DF1 = mag_DF1.rolling(rolling_window_size, min_periods=1).mean()
-    mag_DF1 = mag_DF1[["sys_time","timestamp","abs_timestamp","raw_x_mag","raw_y_mag","raw_z_mag"]]
+    mag_DF1 = mag_DF1[["sys_time","raw_x_mag","raw_y_mag","raw_z_mag"]]
     mag_DF1.to_csv(raw_mag_2,index = False)
 
 def process_gyro(gyro_DF, ref_DF, path, start_time, end_time):
@@ -318,7 +317,7 @@ def process_gyro(gyro_DF, ref_DF, path, start_time, end_time):
     gyro_DF1 = gyro_DF1.merge(ref_DF,how = 'left')
     gyro_DF1 = gyro_DF1.interpolate(method='linear')
     gyro_DF1 = gyro_DF1.rolling(rolling_window_size, min_periods=1).mean()
-    gyro_DF1 = gyro_DF1[["timestamp","sys_time","abs_timestamp","raw_x_gyro","raw_y_gyro","raw_z_gyro"]]
+    gyro_DF1 = gyro_DF1[["sys_time","raw_x_gyro","raw_y_gyro","raw_z_gyro"]]
     gyro_DF1.to_csv(raw_gyro_2,index = False)    
              
 def process_rot(rot_DF,ref_DF, path, start_time, end_time):
@@ -356,7 +355,7 @@ def process_rot(rot_DF,ref_DF, path, start_time, end_time):
     rot_DF1 = rot_DF.merge(ref_DF,how = 'left')
     rot_DF1 = rot_DF.interpolate(method='linear')
     rot_DF1 = rot_DF.rolling(rolling_window_size, min_periods=1).mean()
-    rot_DF1 = rot_DF[["timestamp","sys_time","abs_timestamp","raw_x_rot","raw_y_rot","raw_z_rot"]]    
+    rot_DF1 = rot_DF[["sys_time","raw_x_rot","raw_y_rot","raw_z_rot"]]
     rot_DF1.to_csv(raw_rot_2, index = False)                                                             
             
 def sub_dir_path (d):
@@ -381,7 +380,7 @@ def process_data_main(path):
     """
     for subdir in sub_dir_path(path):
         subdirs = sub_dir_path(subdir)
-    for subdir_datewise in subdirs:
-        process_data(subdir_datewise)
+        for subdir_datewise in subdirs:
+            process_data(subdir_datewise)
         
 process_data_main(path)

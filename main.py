@@ -48,7 +48,7 @@ def helper():
     """    
     print("Usage: \"help [cmd]\" for function syntax.\n")
     print("These are the VehSense commands used for various tasks:\n")    
-    cmd_list = {1: "help cmd", 2: "clean", 3: "size", 4: "new", 5: "backup" ,6: "exit",7: "unzip"}
+    cmd_list = {1: "help cmd", 2: "clean", 3: "size", 4: "new", 5: "backup" ,6: "exit",7: "unzip", 8:"preprocess"}
     vehSenseCommands = {"clean": "move 'bad' trip (based on the input criteria) to a \
 temporary location for manual inspection before moving to trash.\
  Move to trash immediately if [-f] is used."}
@@ -58,6 +58,7 @@ temporary location for manual inspection before moving to trash.\
     vehSenseCommands["backup"] = "backup data. Ask for backup location if [-d] is not specified, and save it for future use."
     vehSenseCommands["exit"] = "exits VehSense backend."
     vehSenseCommands["unzip"] = "decompress the specified file, or compressed files under specified directory."
+    vehSenseCommands["preprocess"] = "preprocess the files in the specified directory."
     for i in range(len(cmd_list)):
         command = cmd_list[i + 1]
         prefix = " "

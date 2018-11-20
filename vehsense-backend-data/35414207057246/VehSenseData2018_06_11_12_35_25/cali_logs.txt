@@ -1,4 +1,0 @@
-"Calibration Service Logs"
-"onBind"
-"onUnbind"
-"onDestroy"
