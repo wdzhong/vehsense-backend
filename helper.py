@@ -87,6 +87,8 @@ def decompress_file(input_string):
     mypath = os.path.join(mypath,filename)
     subdirs = os.listdir(mypath)
     for subdir in subdirs:
+        if subdir.startswith('.'):
+            continue
         file_path = os.path.join(mypath,subdir+"/")
         subfiles = os.listdir(file_path)
         global data_lines
@@ -114,6 +116,8 @@ def decompress_file(input_string):
     if(merge == "True"):
         subdirs = os.listdir(mypath)
         for subdir in subdirs:
+            if subdir.startswith('.'):
+                continue
             file_path = os.path.join(mypath,subdir)
             subfiles = os.listdir(file_path)
             acc = []
