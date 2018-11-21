@@ -115,96 +115,103 @@ def decompress_file(input_string):
     #Merge files
     if(merge == "True"):
         subdirs = os.listdir(mypath)
-        for subdir in subdirs:
-            if subdir.startswith('.'):
-                continue
-            file_path = os.path.join(mypath,subdir)
-            subfiles = os.listdir(file_path)
-            acc = []
-            obd = []
-            gyro = []
-            mag = []
-            gps = []
-            for fil in subfiles:
-                    file_name = os.path.basename(fil)
-                    if "raw_acc" in file_name and "zip" not in file_name:
-                        acc.append(file_name)
-                    elif "raw_obd" in file_name and "zip" not in file_name:
-                        obd.append(file_name)
-                    elif "raw_gyro" in file_name and "zip" not in file_name:
-                        gyro.append(file_name)
-                    elif "raw_mag" in file_name and "zip" not in file_name:
-                        mag.append(file_name)
-                    elif "gps" in file_name and "zip" not in file_name:
-                        gps.append(file_name)                                    
-            acc = sorted(acc)        
-            gyro = sorted(gyro)
-            mag = sorted(mag)
-            obd = sorted(obd)
-            gps = sorted(gps)
-            print(acc)
-            print(gyro)
-            print(mag)
-            print(obd)                                                            
-            print(gps)
-                        
-            if(acc):
-                lines = []
-                for fil in acc:
-                    file_name = os.path.join(file_path,fil)
-                    file_data = open(file_name)
-                    lines.extend(file_data.readlines())
-                    os.remove(file_name)    
-                uncompressed_filename = "raw_acc.txt"
-                uncompressed_filename = os.path.join(file_path,uncompressed_filename)
-                with open(uncompressed_filename, 'w') as filehandle:  
-                    print("Created",uncompressed_filename)
-                    filehandle.writelines("%s" % place for place in lines)
-                    
-            if(obd):
-                lines = []
-                for fil in obd:
-                    file_name = os.path.join(file_path,fil)
-                    file_data = open(file_name).readlines()
-                    lines.extend(file_data)
-                    os.remove(file_name)     
-                uncompressed_filename = "raw_obd.txt"
-                uncompressed_filename = os.path.join(file_path,uncompressed_filename)
-                with open(uncompressed_filename, "w") as fp2:
-                    print("Created",uncompressed_filename)
-                    fp2.writelines("%s" % place for place in lines)
-            if(gyro):
-                lines = []
-                for fil in gyro:
-                    file_name = os.path.join(file_path,fil)
-                    file_data = open(file_name)
-                    lines.extend(file_data.readlines())
-                    file_data.close
-                    os.remove(file_name)     
-                uncompressed_filename = "raw_gyro.txt"
-                uncompressed_filename = os.path.join(file_path,uncompressed_filename)
-                with open(uncompressed_filename, "w") as fp3:
-                    print("Created",uncompressed_filename)
-                    fp3.writelines("%s" % place for place in lines) 
-            if(mag):
-                lines = []
-                for fil in mag:
-                    file_name = os.path.join(file_path,fil)
-                    lines.extend(open(file_name).readlines())
-                    os.remove(file_name)   
-                uncompressed_filename = "raw_mag.txt"
-                uncompressed_filename = os.path.join(file_path,uncompressed_filename)
-                with open(uncompressed_filename, "w") as fp4:
-                    print("Created",uncompressed_filename)
-                    fp4.writelines("%s" % place for place in lines)
-            if(gps):
-                lines = []
-                for fil in gps:
-                    file_name = os.path.join(file_path,fil)
-                    lines.extend(open(file_name).readlines())
-                    os.remove(file_name)   
-                uncompressed_filename = "gps.txt"
-                uncompressed_filename = os.path.join(file_path,uncompressed_filename)
-                with open(uncompressed_filename, "w") as fp5:
-                    print("Created",uncompressed_filename)
-                    fp5.writelines("%s" % place for place in lines)   
+        if(len(subdirs) == 0):
+            file_path = mypath
+            process_single_directory(file_path)
+        else:
+            for subdir in subdirs:
+                if subdir.startswith('.'):
+                    continue
+                file_path = os.path.join(mypath,subdir)
+                process_single_directory(file_path)
+
+def process_single_directory(file_path):
+    subfiles = os.listdir(file_path)
+    acc = []
+    obd = []
+    gyro = []
+    mag = []
+    gps = []
+    for fil in subfiles:
+        file_name = os.path.basename(fil)
+        if "raw_acc" in file_name and "zip" not in file_name:
+            acc.append(file_name)
+        elif "raw_obd" in file_name and "zip" not in file_name:
+            obd.append(file_name)
+        elif "raw_gyro" in file_name and "zip" not in file_name:
+            gyro.append(file_name)
+        elif "raw_mag" in file_name and "zip" not in file_name:
+            mag.append(file_name)
+        elif "gps" in file_name and "zip" not in file_name:
+            gps.append(file_name)
+    acc = sorted(acc)
+    gyro = sorted(gyro)
+    mag = sorted(mag)
+    obd = sorted(obd)
+    gps = sorted(gps)
+    print(acc)
+    print(gyro)
+    print(mag)
+    print(obd)
+    print(gps)
+
+    if (acc):
+        lines = []
+        for fil in acc:
+            file_name = os.path.join(file_path, fil)
+            file_data = open(file_name)
+            lines.extend(file_data.readlines())
+            os.remove(file_name)
+        uncompressed_filename = "raw_acc.txt"
+        uncompressed_filename = os.path.join(file_path, uncompressed_filename)
+        with open(uncompressed_filename, 'w') as filehandle:
+            print("Created", uncompressed_filename)
+            filehandle.writelines("%s" % place for place in lines)
+
+    if (obd):
+        lines = []
+        for fil in obd:
+            file_name = os.path.join(file_path, fil)
+            file_data = open(file_name).readlines()
+            lines.extend(file_data)
+            os.remove(file_name)
+        uncompressed_filename = "raw_obd.txt"
+        uncompressed_filename = os.path.join(file_path, uncompressed_filename)
+        with open(uncompressed_filename, "w") as fp2:
+            print("Created", uncompressed_filename)
+            fp2.writelines("%s" % place for place in lines)
+    if (gyro):
+        lines = []
+        for fil in gyro:
+            file_name = os.path.join(file_path, fil)
+            file_data = open(file_name)
+            lines.extend(file_data.readlines())
+            file_data.close
+            os.remove(file_name)
+        uncompressed_filename = "raw_gyro.txt"
+        uncompressed_filename = os.path.join(file_path, uncompressed_filename)
+        with open(uncompressed_filename, "w") as fp3:
+            print("Created", uncompressed_filename)
+            fp3.writelines("%s" % place for place in lines)
+    if (mag):
+        lines = []
+        for fil in mag:
+            file_name = os.path.join(file_path, fil)
+            lines.extend(open(file_name).readlines())
+            os.remove(file_name)
+        uncompressed_filename = "raw_mag.txt"
+        uncompressed_filename = os.path.join(file_path, uncompressed_filename)
+        with open(uncompressed_filename, "w") as fp4:
+            print("Created", uncompressed_filename)
+            fp4.writelines("%s" % place for place in lines)
+    if (gps):
+        lines = []
+        for fil in gps:
+            file_name = os.path.join(file_path, fil)
+            lines.extend(open(file_name).readlines())
+            os.remove(file_name)
+        uncompressed_filename = "gps.txt"
+        uncompressed_filename = os.path.join(file_path, uncompressed_filename)
+        with open(uncompressed_filename, "w") as fp5:
+            print("Created", uncompressed_filename)
+            fp5.writelines("%s" % place for place in lines)
