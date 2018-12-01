@@ -90,12 +90,17 @@ def decompress_file(input_string):
         if subdir.startswith('.'):
             continue
         file_path = os.path.join(mypath,subdir+"/")
+        print(file_path)
         subfiles = os.listdir(file_path)
         global data_lines
         data_lines = ""
         for fil in subfiles:
-            if(os.path.isdir(fil)):
-                decompress_file(fil)
+            file_path1 = os.path.join(file_path, fil + "/")
+            if(os.path.isdir(file_path1)):
+                file_path1 = os.path.join(input_string[2]+"/", subdir)
+                input_string1 = input_string
+                input_string1[2] = file_path1
+                decompress_file(input_string1)
             else:
                 try:
                     fil = os.path.join(file_path,fil)
@@ -107,7 +112,7 @@ def decompress_file(input_string):
                         fp.writelines(data_lines)
                     print(delete_after_decompress)
                     if (delete_after_decompress == "True"):
-                        print("deleting ",fil) 
+                        print("deleting ",fil)
                         fil = os.path.join(mypath,fil)
                         os.remove(fil)
                 except:
@@ -124,6 +129,7 @@ def decompress_file(input_string):
                     continue
                 file_path = os.path.join(mypath,subdir)
                 process_single_directory(file_path)
+    return
 
 def process_single_directory(file_path):
     subfiles = os.listdir(file_path)
