@@ -6,6 +6,7 @@ import numpy as np
 import time
 import calendar
 
+global sampling_rate
 sampling_rate = '100L'
 ref_file = "raw_obd.txt"
 rolling_window_size = 100
@@ -370,7 +371,7 @@ def sub_dir_path (d):
     """
     return filter(os.path.isdir,[os.path.join(d,f) for f in os.listdir(d)])
    
-def process_data_main(path):
+def process_data_main(preprocess_path, frequency):
     """
     Parses the directory in the provided path and processes the individual sub-directories.
     
@@ -378,9 +379,11 @@ def process_data_main(path):
         path: path of data folder to process
        
     """
-    for subdir in sub_dir_path(path):
+    sampling_rate = str(1000.0 / frequency) + 'L';
+    print(sampling_rate)
+    for subdir in sub_dir_path(preprocess_path):
         subdirs = sub_dir_path(subdir)
         for subdir_datewise in subdirs:
             process_data(subdir_datewise)
         
-process_data_main(path)
+#process_data_main(path, sampling_rate)

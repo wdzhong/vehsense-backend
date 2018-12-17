@@ -18,7 +18,7 @@ from datetime import datetime
 from dateutil import tz
 from time import gmtime,strftime
 from helper import decompress_file
-global backup_path
+global backup_path, data_path
 
 parent_path = os.path.dirname(os.path.realpath(__file__)) #Parent directory of VehSense data
 data_path = os.path.join(parent_path,"vehsense-backend-data") #VehSense data directory
@@ -349,9 +349,40 @@ def size(cmd):
             print(os.path.basename(subdir))
             print("size",get_size(subdir), "KB")
             
-def preprocess(cmd):
-    import file_process
-    file_process.process_data_main(data_path)
+def preprocess(input_string):
+    """
+    Performs the operations for the preprocess command, i.e, cleans the files in the specified directory and executes the preprocess functionality.
+
+    Args:
+        input_string (str array): options for preprocess command which are directory and frequency. 
+
+    """
+    if(input_string == "syntax"):
+        print("preprocess [-d directory] [-f frequency=200]")
+    else:
+        input_map = convert_to_map(input_string)
+        frequency = input_map.get('-f', 5)
+        preprocess_path = input_map.get('-d', data_path)
+        print(frequency)
+        print(preprocess_path)
+        if(len(input_map) % 2 == 1):
+            pass
+            #print("Invalid arguments for preprocess")
+            #return
+        import file_process
+        file_process.process_data_main(preprocess_path, frequency)
+    
+def convert_to_map(input_string):
+    input_map = {}
+    for i in range(len(input_string)):
+        if(i % 2 == 0):
+            continue
+        try:
+            input_map[input_string[i]] = input_string[i + 1]
+        except:
+            print("Invalid arguments for preprocess")
+    return input_map
+        
                         
 def main():
     """
