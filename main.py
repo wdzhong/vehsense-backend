@@ -76,8 +76,11 @@ def clean_file(input_string):
     else:
         move_trash = False
         flag = False
-    
+        skip = False
         for i,val in enumerate(input_string):
+            if(skip == True):
+                skip = False
+                continue
             if (flag == True):
                 flag = False
                 continue
@@ -89,7 +92,10 @@ def clean_file(input_string):
                     return
             if(input_string[len(input_string)-1] == "-f"):
                 move_trash =  True
-            if(val == "--all"):
+            if(val == "-d"):
+                data_path = input_string[i+1]
+                skip = True
+            elif(val == "--all"):
                 size = int(input_string[i+1])
                 flag = True
                 clean_all(move_trash,size)
@@ -361,8 +367,10 @@ def preprocess(input_string):
         print("preprocess [-d directory] [-f frequency=200]")
     else:
         input_map = convert_to_map(input_string)
-        frequency = input_map.get('-f', 5)
+        frequency = float(input_map.get('-f', 5))
         preprocess_path = input_map.get('-d', data_path)
+        input_string = "clean -d " + preprocess_path + " --all 170"
+        clean_file(input_string.split(" "))
         print(frequency)
         print(preprocess_path)
         if(len(input_map) % 2 == 1):

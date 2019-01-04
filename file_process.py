@@ -34,7 +34,7 @@ def process_data(path):
     ref_file = os.path.join(path,"raw_obd.txt")
     empty_ref_file_size = 360
     # os.path.exists(acc) or os.path.exists(obd)    
-    if((os.stat(ref_file).st_size < empty_ref_file_size)):
+    if(not os.path.exists(obd) or (os.stat(ref_file).st_size < empty_ref_file_size)):
         return
     for root, subdirs, files in os.walk(path):
             ref_DF = pd.read_csv(ref_file)
@@ -379,7 +379,8 @@ def process_data_main(preprocess_path, frequency):
         path: path of data folder to process
        
     """
-    sampling_rate = str(1000.0 / frequency) + 'L';
+    sampling_rate = str(1000.0 / frequency);
+    sampling_rate = sampling_rate + 'L'
     print(sampling_rate)
     for subdir in sub_dir_path(preprocess_path):
         subdirs = sub_dir_path(subdir)
