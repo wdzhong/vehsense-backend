@@ -16,7 +16,7 @@ import os
 import time
 from datetime import datetime
 from dateutil import tz
-from time import gmtime,strftime
+
 from helper import decompress_file
 global backup_path, data_path
 

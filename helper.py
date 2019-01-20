@@ -11,6 +11,17 @@ import sys,traceback
 import os
 import pickle
 
+def convert_to_map(input_string):
+    input_map = {}
+    for i in range(len(input_string)):
+        if(i % 2 == 0):
+            continue
+        try:
+            input_map[input_string[i]] = input_string[i + 1]
+        except:
+            print("Invalid arguments for preprocess")
+    return input_map
+
 def decompress_file(input_string):
     
     """
@@ -37,53 +48,11 @@ def decompress_file(input_string):
     mypath = os.path.dirname(os.path.realpath(__file__))
     print(mypath)
     filename = ""
-    if(len(input_string) == 6):
-        filename = input_string[2]
-        compress_type = input_string[3].split("=")[1]
-        compress_type = compress_type[1:-1]
-        delete_after_decompress = input_string[4].split("=")[1]
-        merge = input_string[5].split("=")[1]
-    elif(len(input_string) == 5):
-        filename = input_string[2]
-        if("compress-type" in (input_string[3].split("=")[0])):
-            compress_type = input_string[3].split("=")[1]
-            compress_type = compress_type[1:-1]
-            if("delete" in input_string[4].split("=")[0]):
-                delete_after_decompress = input_string[4].split("=")[1]
-                merge = False
-                print("delete_after_decompress",delete_after_decompress)
-            elif("merge" in input_string[4].split("=")[0]):
-                delete_after_decompress = False
-                merge = input_string[4].split("=")[1]
-        elif("delete" in (input_string[3].split("=")[0])):
-            delete_after_decompress = input_string[3].split("=")[1]
-            print("delete_after_decompress",delete_after_decompress)
-            merge = input_string[4].split("=")[1]
-            compress_type = ".zip"
-    elif(len(input_string) == 4):
-        filename = input_string[2]
-        if("compress" in input_string[3].split("=")[0]):
-            compress_type = input_string[3].split("=")[1]
-            compress_type = compress_type[1:-1]            
-            delete_after_decompress = False
-            merge = False
-        elif("delete" in input_string[3].split("=")[0]):
-            print(input_string[3].split("=")[1])
-            delete_after_decompress = input_string[3].split("=")[1]
-            compress_type = ".zip"
-            merge = False
-        else:
-            compress_type = ".zip"
-            delete_after_decompress = True
-            merge = input_string[3].split("=")[1]  
-    elif(len(input_string) == 3):
-        filename = input_string[2]
-        compress_type = ".zip"
-        delete_after_decompress = False
-        merge = False
-    else:
-        print ("Please check syntax")
-        return
+    input_map = convert_to_map(input_string)
+    filename = input_map.get('-f')
+    compress_type = input_map.get('--compress-type','.zip')
+    delete_after_decompress = input_map.get('--delete', "False")
+    merge = input_map.get('--merge', "True")
     mypath = os.path.join(mypath,filename)
     subdirs = os.listdir(mypath)
     for subdir in subdirs:

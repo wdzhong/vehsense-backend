@@ -37,6 +37,7 @@ def process_data(path):
     if(not os.path.exists(obd) or (os.stat(ref_file).st_size < empty_ref_file_size)):
         return
     for root, subdirs, files in os.walk(path):
+            print(path)
             ref_DF = pd.read_csv(ref_file)
             for name in files: 
                 if name.endswith("raw_acc.txt"):
@@ -379,12 +380,17 @@ def process_data_main(preprocess_path, frequency):
         path: path of data folder to process
        
     """
-    sampling_rate = str(1000.0 / frequency);
+    sampling_rate = str(1000.0 / frequency)
     sampling_rate = sampling_rate + 'L'
     print(sampling_rate)
     for subdir in sub_dir_path(preprocess_path):
+        print(subdir)
         subdirs = sub_dir_path(subdir)
+        subdirs = list(subdirs)
+        if(len(subdirs) == 0):
+            subdirs.append(subdir)
         for subdir_datewise in subdirs:
+            print(subdir_datewise)
             process_data(subdir_datewise)
         
 #process_data_main(path, sampling_rate)
