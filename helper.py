@@ -48,13 +48,22 @@ def decompress_file(input_string):
     mypath = os.path.dirname(os.path.realpath(__file__))
     print(mypath)
     filename = ""
+    dirname = ""
     input_map = convert_to_map(input_string)
-    filename = input_map.get('-f')
+    dirname = input_map.get('-d')
+    filename = input_map.get('-f', "Null")
+
+
     compress_type = input_map.get('--compress-type','.zip')
     delete_after_decompress = input_map.get('--delete', "False")
     merge = input_map.get('--merge', "True")
-    mypath = os.path.join(mypath,filename)
+    if(filename != "Null"):
+        filename = os.path.join(mypath,filename)
+        process_file(filename, delete_after_decompress, compress_type, mypath)
+        return
+    mypath = os.path.join(mypath,dirname)
     subdirs = os.listdir(mypath)
+
     for subdir in subdirs:
         if subdir.startswith('.'):
             continue
@@ -71,21 +80,8 @@ def decompress_file(input_string):
                 input_string1[2] = file_path1
                 decompress_file(input_string1)
             else:
-                try:
-                    fil = os.path.join(file_path,fil)
-                    zip_file = gzip.open(fil)
-                    data_lines = zip_file.readlines()
-                    print(fil)
-                    uncompressed_filename = fil[:-len(compress_type)]
-                    with open(uncompressed_filename, "wb") as fp:
-                        fp.writelines(data_lines)
-                    print(delete_after_decompress)
-                    if (delete_after_decompress == "True"):
-                        print("deleting ",fil)
-                        fil = os.path.join(mypath,fil)
-                        os.remove(fil)
-                except:
-                    pass
+                fil = os.path.join(file_path,fil)    
+                process_file(fil, delete_after_decompress, compress_type, mypath)
     #Merge files
     if(merge == "True"):
         subdirs = os.listdir(mypath)
@@ -99,6 +95,23 @@ def decompress_file(input_string):
                 file_path = os.path.join(mypath,subdir)
                 process_single_directory(file_path)
     return
+
+def process_file(fil, delete_after_decompress, compress_type, mypath):
+    try:
+        zip_file = gzip.open(fil)
+        data_lines = zip_file.readlines()
+        print(fil)
+        uncompressed_filename = fil[:-len(compress_type)]
+        with open(uncompressed_filename, "wb") as fp:
+            fp.writelines(data_lines)
+        print(delete_after_decompress)
+        if (delete_after_decompress == "True"):
+            print("deleting ",fil)
+            fil = os.path.join(mypath,fil)
+            os.remove(fil)
+    except:
+        pass
+    
 
 def process_single_directory(file_path):
     subfiles = os.listdir(file_path)
