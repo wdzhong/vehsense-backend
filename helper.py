@@ -41,7 +41,6 @@ def decompress_file(input_string):
     """
     # TODO: handle exception FileNotFoundError properly
     global merge
-    merge = False
     if (input_string == "syntax"):
         print("unzip [-f filename] [-d directory] [--compress-type='.zip'] [--delete=False] [--merge=True]. If --delete is set to be True, then the original compressed file(s) will be deleted after decompression. If --merge is True, then files with the same prefix will be merged after decompression.")
         return
@@ -52,8 +51,6 @@ def decompress_file(input_string):
     input_map = convert_to_map(input_string)
     dirname = input_map.get('-d')
     filename = input_map.get('-f', "Null")
-
-
     compress_type = input_map.get('--compress-type','.zip')
     delete_after_decompress = input_map.get('--delete', "False")
     merge = input_map.get('--merge', "True")
@@ -62,39 +59,36 @@ def decompress_file(input_string):
         process_file(filename, delete_after_decompress, compress_type, mypath)
         return
     mypath = os.path.join(mypath,dirname)
-    subdirs = os.listdir(mypath)
-
-    for subdir in subdirs:
-        if subdir.startswith('.'):
-            continue
-        file_path = os.path.join(mypath,subdir+"/")
-        print(file_path)
-        subfiles = os.listdir(file_path)
-        global data_lines
-        data_lines = ""
-        for fil in subfiles:
-            file_path1 = os.path.join(file_path, fil + "/")
-            if(os.path.isdir(file_path1)):
-                file_path1 = os.path.join(input_string[2]+"/", subdir)
-                input_string1 = input_string
-                input_string1[2] = file_path1
-                decompress_file(input_string1)
-            else:
-                fil = os.path.join(file_path,fil)    
-                process_file(fil, delete_after_decompress, compress_type, mypath)
+    process_single_directory(mypath, delete_after_decompress, compress_type)
     #Merge files
     if(merge == "True"):
-        subdirs = os.listdir(mypath)
-        if(len(subdirs) == 0):
-            file_path = mypath
-            process_single_directory(file_path)
-        else:
-            for subdir in subdirs:
-                if subdir.startswith('.'):
-                    continue
-                file_path = os.path.join(mypath,subdir)
-                process_single_directory(file_path)
+        merge_directories(mypath)
     return
+
+def merge_directories(mypath):
+    for root, subdirs, files in os.walk(mypath):
+        if (len(subdirs) == 0):
+            merge_single_directory(root)
+            return
+        for subdir in subdirs:
+            if subdir.startswith('.'):
+                continue
+            file_path = os.path.join(mypath,subdir)
+            merge_directories(file_path)
+                   
+def process_single_directory(mypath, delete_after_decompress, compress_type):
+    for root, subdirs, files in os.walk(mypath):
+        for subdir in subdirs:
+            if subdir.startswith('.'):
+                continue
+            file_path = os.path.join(mypath,subdir)
+            process_single_directory(file_path, delete_after_decompress, compress_type)
+        global data_lines
+        data_lines = ""
+        for fil in files:
+           # file_path1 = os.path.join(file_path, fil + "/")
+            fil = os.path.join(mypath,fil)    
+            process_file(fil, delete_after_decompress, compress_type, mypath)
 
 def process_file(fil, delete_after_decompress, compress_type, mypath):
     try:
@@ -113,7 +107,7 @@ def process_file(fil, delete_after_decompress, compress_type, mypath):
         pass
     
 
-def process_single_directory(file_path):
+def merge_single_directory(file_path):
     subfiles = os.listdir(file_path)
     acc = []
     obd = []

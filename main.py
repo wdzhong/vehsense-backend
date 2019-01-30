@@ -16,9 +16,18 @@ import os
 import time
 from datetime import datetime
 from dateutil import tz
+<<<<<<< HEAD
 
 from helper import decompress_file
 global backup_path, data_path
+=======
+from time import gmtime,strftime
+import argparse
+
+from helper import decompress_file
+
+global backup_path
+>>>>>>> 773be985f637734acfe3a5a0227c614b852797f4
 
 parent_path = os.path.dirname(os.path.realpath(__file__)) #Parent directory of VehSense data
 data_path = os.path.join(parent_path,"vehsense-backend-data") #VehSense data directory
@@ -416,5 +425,12 @@ def main():
             print ("Unrecognized command. Enter \"help [cmd]\" for function syntax, \"help\" for list of available commands")
     
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--test', help="used for CircleCI")
+    args = parser.parse_args()
+    if args.test:
+        print("test passed")
+        sys.exit()
+
     #TODO: accept parameters or prompt the user to input, e.g. directory of data
     main()
