@@ -35,7 +35,10 @@ def process_data(path):
     empty_ref_file_size = 360
     # os.path.exists(acc) or os.path.exists(obd)    
     if(not os.path.exists(obd) or (os.stat(ref_file).st_size < empty_ref_file_size)):
-        return
+        ref_file = os.path.join(path,"gps.txt")
+        empty_ref_file_size = 67
+        if(not os.path.exists(raw_gps) or (os.stat(ref_file).st_size < empty_ref_file_size)): 
+            return
     for root, subdirs, files in os.walk(path):
             print(path)
             ref_DF = pd.read_csv(ref_file)
