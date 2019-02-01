@@ -12,12 +12,16 @@ import os
 import pickle
 
 def convert_to_map(input_string):
+
     input_map = {}
     for i in range(len(input_string)):
+
         if(i % 2 == 0):
             continue
+        print(i ," ", input_string[i])
         try:
             input_map[input_string[i]] = input_string[i + 1]
+
         except:
             print("Invalid arguments for preprocess")
     return input_map
@@ -41,7 +45,7 @@ def decompress_file(input_string):
     """
     # TODO: handle exception FileNotFoundError properly
     global merge
-    if (input_string == "syntax"):
+    if input_string == "syntax":
         print("unzip [-f filename] [-d directory] [--compress-type='.zip'] [--delete=False] [--merge=True]. If --delete is set to be True, then the original compressed file(s) will be deleted after decompression. If --merge is True, then files with the same prefix will be merged after decompression.")
         return
     mypath = os.path.dirname(os.path.realpath(__file__))
@@ -53,6 +57,7 @@ def decompress_file(input_string):
     filename = input_map.get('-f', "Null")
     compress_type = input_map.get('--compress-type','.zip')
     delete_after_decompress = input_map.get('--delete', "False")
+    delete_unzip = input_map.get('--delete-unzip', "True")
     merge = input_map.get('--merge', "True")
     if(filename != "Null"):
         filename = os.path.join(mypath,filename)
@@ -62,19 +67,19 @@ def decompress_file(input_string):
     process_single_directory(mypath, delete_after_decompress, compress_type)
     #Merge files
     if(merge == "True"):
-        merge_directories(mypath)
+        merge_directories(mypath, delete_unzip)
     return
 
-def merge_directories(mypath):
+def merge_directories(mypath, delete_unzip):
     for root, subdirs, files in os.walk(mypath):
-        if (len(subdirs) == 0):
-            merge_single_directory(root)
+        if len(subdirs) == 0:
+            merge_single_directory(root, delete_unzip)
             return
         for subdir in subdirs:
             if subdir.startswith('.'):
                 continue
             file_path = os.path.join(mypath,subdir)
-            merge_directories(file_path)
+            merge_directories(file_path, delete_unzip)
                    
 def process_single_directory(mypath, delete_after_decompress, compress_type):
     for root, subdirs, files in os.walk(mypath):
@@ -86,7 +91,6 @@ def process_single_directory(mypath, delete_after_decompress, compress_type):
         global data_lines
         data_lines = ""
         for fil in files:
-           # file_path1 = os.path.join(file_path, fil + "/")
             fil = os.path.join(mypath,fil)    
             process_file(fil, delete_after_decompress, compress_type, mypath)
 
@@ -107,7 +111,7 @@ def process_file(fil, delete_after_decompress, compress_type, mypath):
         pass
     
 
-def merge_single_directory(file_path):
+def merge_single_directory(file_path, delete_unzip):
     subfiles = os.listdir(file_path)
     acc = []
     obd = []
@@ -143,20 +147,21 @@ def merge_single_directory(file_path):
             file_name = os.path.join(file_path, fil)
             file_data = open(file_name)
             lines.extend(file_data.readlines())
-            os.remove(file_name)
+            if (delete_unzip == "True"):
+                os.remove(file_name)
         uncompressed_filename = "raw_acc.txt"
         uncompressed_filename = os.path.join(file_path, uncompressed_filename)
         with open(uncompressed_filename, 'w') as filehandle:
             print("Created", uncompressed_filename)
             filehandle.writelines("%s" % place for place in lines)
-
     if (obd):
         lines = []
         for fil in obd:
             file_name = os.path.join(file_path, fil)
             file_data = open(file_name).readlines()
             lines.extend(file_data)
-            os.remove(file_name)
+            if (delete_unzip == "True"):
+                os.remove(file_name)
         uncompressed_filename = "raw_obd.txt"
         uncompressed_filename = os.path.join(file_path, uncompressed_filename)
         with open(uncompressed_filename, "w") as fp2:
@@ -169,7 +174,8 @@ def merge_single_directory(file_path):
             file_data = open(file_name)
             lines.extend(file_data.readlines())
             file_data.close
-            os.remove(file_name)
+            if delete_unzip == "True":
+                os.remove(file_name)
         uncompressed_filename = "raw_gyro.txt"
         uncompressed_filename = os.path.join(file_path, uncompressed_filename)
         with open(uncompressed_filename, "w") as fp3:
@@ -180,7 +186,8 @@ def merge_single_directory(file_path):
         for fil in mag:
             file_name = os.path.join(file_path, fil)
             lines.extend(open(file_name).readlines())
-            os.remove(file_name)
+            if delete_unzip == "True":
+                os.remove(file_name)
         uncompressed_filename = "raw_mag.txt"
         uncompressed_filename = os.path.join(file_path, uncompressed_filename)
         with open(uncompressed_filename, "w") as fp4:
@@ -191,7 +198,8 @@ def merge_single_directory(file_path):
         for fil in gps:
             file_name = os.path.join(file_path, fil)
             lines.extend(open(file_name).readlines())
-            os.remove(file_name)
+            if delete_unzip == "True":
+                os.remove(file_name)
         uncompressed_filename = "gps.txt"
         uncompressed_filename = os.path.join(file_path, uncompressed_filename)
         with open(uncompressed_filename, "w") as fp5:
