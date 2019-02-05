@@ -14,20 +14,12 @@ import sys
 import shutil
 import os
 import time
+import argparse
 from datetime import datetime
 from dateutil import tz
-<<<<<<< HEAD
-
+from time import gmtime,strftime
 from helper import decompress_file
 global backup_path, data_path
-=======
-from time import gmtime,strftime
-import argparse
-
-from helper import decompress_file
-
-global backup_path
->>>>>>> 773be985f637734acfe3a5a0227c614b852797f4
 
 parent_path = os.path.dirname(os.path.realpath(__file__)) #Parent directory of VehSense data
 data_path = os.path.join(parent_path,"vehsense-backend-data") #VehSense data directory
@@ -142,9 +134,13 @@ def clean_subfile(filetype,size,move_trash):
             if((os.stat(raw_file).st_size) <= size):
                 if (move_trash == True):
                     print("Deleting file ",raw_file)
+                    with open(os.path.join(parent_path,"cleaned_files.txt"),"a+") as my_file:
+                        my_file.write(os.path.realpath(raw_file)  + "\n")                           
                     os.remove(raw_file)
                 else:
                     print ("Moving file ",raw_file)
+                    with open(os.path.join(parent_path,"cleaned_files.txt"),"a+") as my_file:
+                        my_file.write(os.path.realpath(raw_file)  + "\n")
                     source = subdir_datewise
                     dest1 = os.path.basename(subdir_datewise)
                     dest2 = os.path.basename(os.path.dirname(subdir_datewise))
@@ -163,6 +159,7 @@ def clean_all(move_trash,size):
         size (int): the threshold size of files in bytes.
 
     """
+    print("clean_all")
     for subdir in sub_dir_path(data_path):
         subdirs = sub_dir_path(subdir)
         for subdir_datewise in subdirs:
@@ -170,10 +167,15 @@ def clean_all(move_trash,size):
             for root, subdirs, files in os.walk(sub_path):
                 for filename in files:
                     raw_file = os.path.join(subdir_datewise,filename)
+                    print(raw_file, " ", size, " ", os.stat(raw_file).st_size)
                     if((os.stat(raw_file).st_size) <= size):
-                        if (move_trash == True):
+                        print("To delete")
+                        if (move_trash == True):                                
                             os.remove(raw_file)
                         else:
+                            print ("Moving file ",raw_file)
+                            with open(os.path.join(parent_path,"cleaned_files.txt"),"a+") as my_file:
+                                my_file.write(os.path.realpath(raw_file)  + "\n")
                             source = subdir_datewise
                             dest1 = os.path.basename(subdir_datewise)
                             dest2 = os.path.basename(os.path.dirname(subdir_datewise))
@@ -406,6 +408,7 @@ def main():
     Takes the user input and invokes the appropriate method.
         
     """
+    
     print ("Welcome to Vehsense backend utility. Enter \"help\" for list of available commands.")
     switcher = {"clean": clean_file, "size": size, "new": new, "backup": backup, "unzip": decompress_file, "preprocess": preprocess}      
     while True:
@@ -425,12 +428,11 @@ def main():
             print ("Unrecognized command. Enter \"help [cmd]\" for function syntax, \"help\" for list of available commands")
     
 if __name__ == '__main__':
+    #TODO: accept parameters or prompt the user to input, e.g. directory of data
     parser = argparse.ArgumentParser()
     parser.add_argument('--test', help="used for CircleCI")
     args = parser.parse_args()
     if args.test:
         print("test passed")
         sys.exit()
-
-    #TODO: accept parameters or prompt the user to input, e.g. directory of data
     main()
