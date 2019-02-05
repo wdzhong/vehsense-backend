@@ -19,6 +19,7 @@ from datetime import datetime
 from dateutil import tz
 from time import gmtime,strftime
 from helper import decompress_file
+from file_process import sub_dir_path
 global backup_path, data_path
 
 parent_path = os.path.dirname(os.path.realpath(__file__)) #Parent directory of VehSense data
@@ -26,18 +27,6 @@ data_path = os.path.join(parent_path,"vehsense-backend-data") #VehSense data dir
 temp_path = os.path.join(parent_path,"vehsense-backend-data-temp") #temporary folder for storing the data after clean if -f is specified
 backup_path = os.path.join(parent_path,"vehsense-backend-data-backup") # path of backup folder
 
-def sub_dir_path (d):
-    """
-    Filters directories from the argument directory and returns the list of sub-directory folders.
-
-    Args:
-        d (str): directory of data
-        
-    Returns:
-        List of sub-directories in the given directory.
-        
-    """
-    return filter(os.path.isdir,[os.path.join(d,f) for f in os.listdir(d)])
    
 def helper():
     """
@@ -75,115 +64,69 @@ def clean_file(input_string):
     if(input_string == "syntax"):
         print("clean [-acc] min_size_of_acc [-gps] min_size_of_gps [-gyro] min_size_of_gyro [-obd] min_size_of_obd [-grav] min_size_of_grav [-mag] min_size_of_mag [-rot] min_size_of_rot [--all] min_size_of_file [-f]")
     else:
-        move_trash = False
-        flag = False
-        skip = False
-        for i,val in enumerate(input_string):
-            if(skip == True):
-                skip = False
-                continue
-            if (flag == True):
-                flag = False
-                continue
-            if (val == "clean"):
-                if(len(input_string) != 1):
-                    continue
-                else:
-                    print("Enter correct options")
-                    return
-            if(input_string[len(input_string)-1] == "-f"):
-                move_trash =  True
-            if(val == "-d"):
-                data_path = input_string[i+1]
-                skip = True
-            elif(val == "--all"):
-                size = int(input_string[i+1])
-                flag = True
-                clean_all(move_trash,size)
-            elif((val == "-acc") or (val == "-gps") or (val == "-gyro") or (val == "-obd") or (val == "-grav") or (val == "-mag") or (val == "-rot")):
-                try:
-                    size = int(input_string[i+1])
-                    flag = True
-                    clean_subfile(val[1:],size,move_trash)
-                except:
-                    print("Enter correct options")
-                    return
-            elif(val == "-f"):
-                continue
-            else:
-                print("Enter the correct options")
-                return
+        input_map = convert_to_map(input_string)
+        if '-f' in input_map:
+            move_trash = True
+        else:
+            move_trash = False
+        data_path_new = input_map.get('-d', data_path)
+        acc_validation = input_map.get('--acc', "True")
+        gyro_validation = input_map.get('--gyro', "True")
+        obd_validation = input_map.get('--obd', "False")
+        clean_all(move_trash, acc_validation, gyro_validation, obd_validation, data_path_new)
+
+
         
-def clean_subfile(filetype,size,move_trash):
+def clean_all(move_trash, acc_validation, gyro_validation, obd_validation, data_path_new):
     """
     Performs the clean operations of the individual files, invoked from within the clean_file method.
 
     Args:
-        filetype (str): type of file, ex: acc, obd, gps, grav.
-        size (int): the threshold size of files in bytes.
         move_trash (bool): true if the files need to move to trash.
-    
+        size (int): the threshold size of files in bytes.
+
     """
-    switcher = {"acc": "raw_acc.txt", "obd": "raw_obd.txt", "gps": "gps.txt", "gyro": "raw_gyro.txt", "grav": "raw_grav.txt", "mag": "raw_mag.txt", "rot": "raw_rot.txt"}
-    filename = switcher[filetype]
-    for subdir in sub_dir_path(data_path):
-        subdirs = sub_dir_path(subdir)
-    for subdir_datewise in subdirs:
-        raw_file = os.path.join(data_path,filename)
-        if(os.path.exists(raw_file)):
-            if((os.stat(raw_file).st_size) <= size):
-                if (move_trash == True):
-                    print("Deleting file ",raw_file)
-                    with open(os.path.join(parent_path,"cleaned_files.txt"),"a+") as my_file:
-                        my_file.write(os.path.realpath(raw_file)  + "\n")                           
+    for root, subdirs, files in os.walk(data_path_new):
+        for subdir in subdirs:
+            clean_all(move_trash, acc_validation, gyro_validation, obd_validation, os.path.join(data_path_new, subdir))
+        if(len(files) == 0):
+            return
+        raw_acc = os.path.join(root,"raw_acc.txt")
+        raw_obd = os.path.join(root,"raw_obd.txt")
+        raw_gyro = os.path.join(root,"raw_gyro.txt")
+        if acc_validation == "True":
+            if(not os.path.exists(raw_acc)):
+                clean_directory(move_trash, root)
+                continue
+        if obd_validation == "True":
+            if(not os.path.exists(raw_obd)):
+                clean_directory(move_trash, root)
+                continue
+        if gyro_validation == "True":
+            if(not os.path.exists(raw_gyro)):
+                clean_directory(move_trash, root)
+                            
+def clean_directory(move_trash, subdir):                                                                                    
+    with open(os.path.join(parent_path,"cleaned_files.txt"),"a+") as my_file:
+        my_file.write(os.path.realpath(subdir)  + "\n")
+        source = subdir
+        for root, subdirs, files in os.walk(subdir):
+            for filename in files:
+                raw_file = os.path.join(subdir,filename)
+                if (move_trash == True):                                
                     os.remove(raw_file)
                 else:
                     print ("Moving file ",raw_file)
-                    with open(os.path.join(parent_path,"cleaned_files.txt"),"a+") as my_file:
-                        my_file.write(os.path.realpath(raw_file)  + "\n")
-                    source = subdir_datewise
-                    dest1 = os.path.basename(subdir_datewise)
-                    dest2 = os.path.basename(os.path.dirname(subdir_datewise))
+                    dest1 = os.path.basename(subdir)
+                    dest2 = os.path.basename(os.path.dirname(subdir))
                     dest_f1 = os.path.join(temp_path,dest2)
                     dest_f2= os.path.join(dest_f1,dest1)
                     if not os.path.exists(dest_f2):
                         os.makedirs(dest_f2)
-                    shutil.move(source+"/"+filename,dest_f2)
-        
-def clean_all(move_trash,size):
-    """
-    Performs the clean operations of the individual files, invoked from within the clean_file method.
-
-    Args:
-        move_trash (bool): true if the files need to move to trash.
-        size (int): the threshold size of files in bytes.
-
-    """
-    print("clean_all")
-    for subdir in sub_dir_path(data_path):
-        subdirs = sub_dir_path(subdir)
-        for subdir_datewise in subdirs:
-            sub_path = os.path.join("",subdir_datewise)
-            for root, subdirs, files in os.walk(sub_path):
-                for filename in files:
-                    raw_file = os.path.join(subdir_datewise,filename)
-                    print(raw_file, " ", size, " ", os.stat(raw_file).st_size)
-                    if((os.stat(raw_file).st_size) <= size):
-                        print("To delete")
-                        if (move_trash == True):                                
-                            os.remove(raw_file)
-                        else:
-                            print ("Moving file ",raw_file)
-                            with open(os.path.join(parent_path,"cleaned_files.txt"),"a+") as my_file:
-                                my_file.write(os.path.realpath(raw_file)  + "\n")
-                            source = subdir_datewise
-                            dest1 = os.path.basename(subdir_datewise)
-                            dest2 = os.path.basename(os.path.dirname(subdir_datewise))
-                            dest_f1 = os.path.join(temp_path,dest2)
-                            dest_f2= os.path.join(dest_f1,dest1)
-                            if not os.path.exists(dest_f2):
-                                os.makedirs(dest_f2)
-                            shutil.move(source+"/"+filename,dest_f2)
+                    try:
+                        shutil.move(source+"/"+filename,dest_f2)
+                    except:
+                        return
          
 def backup(input_string):
     """
@@ -399,7 +342,7 @@ def convert_to_map(input_string):
         try:
             input_map[input_string[i]] = input_string[i + 1]
         except:
-            print("Invalid arguments for preprocess")
+            print("Invalid arguments")
     return input_map
         
                         
