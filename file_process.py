@@ -5,14 +5,32 @@ from datetime import datetime
 import numpy as np 
 import time
 import calendar
+import mmap
+import re
 
 global sampling_rate
 sampling_rate = '100L'
 ref_file = "raw_obd.txt"
 rolling_window_size = 100
-
+global memory_map
 parent_path = os.path.dirname(os.path.realpath(__file__)) #Parent directory of VehSense data
 path = os.path.join(parent_path,"vehsense-backend-data") #VehSense data directory
+
+def check_if_processed(path):
+    with open(os.path.join(parent_path,"preprocessed_files.txt"),"w+") as my_file:
+        pass
+    with open(os.path.join(parent_path,"preprocessed_files.txt"),"r") as my_file:
+        try:
+            lines = my_file.readLines()
+            for line in lines:
+                if line.trim() == path:
+                    return True
+#            memory_map = mmap.mmap(my_file.fileno(), 0)
+#            match_object = re.search(path, memory_map)
+#            memory_map.close()
+        except:
+            return False
+    return False
 
 def process_data(path):
     """
@@ -22,6 +40,14 @@ def process_data(path):
         path: path of individual data folder to process
         
     """
+    if check_if_processed(path):
+        print ("Skipping as trip already processed ", path)
+        return
+    #TO FIX: open(os.path.join(parent_path,"preprocessed_files.txt") stores only 1 path 
+    with open("preprocessed_files.txt","a") as preprocessed_file:
+        preprocessed_file.write(path  + "\n")         
+
+    
     acc = os.path.join(path,"acc.txt")
     obd = os.path.join(path,"obd.txt")
     raw_acc = os.path.join(path,"raw_acc.txt")
@@ -33,9 +59,13 @@ def process_data(path):
     raw_rot = os.path.join(path,"raw_rot.txt")
     ref_file = os.path.join(path,"raw_obd.txt")
     empty_ref_file_size = 360
-    # os.path.exists(acc) or os.path.exists(obd)    
+    # os.path.exists(acc) or os.path.exists(obd)  
+          
     if(not os.path.exists(obd) or (os.stat(ref_file).st_size < empty_ref_file_size)):
         return
+
+       
+                        
     for root, subdirs, files in os.walk(path):
             ref_DF = pd.read_csv(ref_file)
             for name in files: 
