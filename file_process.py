@@ -17,19 +17,20 @@ parent_path = os.path.dirname(os.path.realpath(__file__)) #Parent directory of V
 path = os.path.join(parent_path,"vehsense-backend-data") #VehSense data directory
 
 def check_if_processed(path):
-    with open(os.path.join(parent_path,"preprocessed_files.txt"),"w+") as my_file:
-        pass
-    with open(os.path.join(parent_path,"preprocessed_files.txt"),"r") as my_file:
-        try:
-            lines = my_file.readLines()
+    print(path, "--------------------------")
+    try:
+        with open(os.path.join(parent_path,"preprocessed_files.txt"),"r") as my_file:
+            lines = my_file.readlines()
             for line in lines:
+                print(path, "--------------------------", line.trim())
                 if line.trim() == path:
+                    
                     return True
-#            memory_map = mmap.mmap(my_file.fileno(), 0)
-#            match_object = re.search(path, memory_map)
-#            memory_map.close()
-        except:
-            return False
+    #            memory_map = mmap.mmap(my_file.fileno(), 0)
+    #            match_object = re.search(path, memory_map)
+    #            memory_map.close()
+    except:
+        return False
     return False
 
 def process_data(path):
@@ -40,14 +41,6 @@ def process_data(path):
         path: path of individual data folder to process
         
     """
-    if check_if_processed(path):
-        print ("Skipping as trip already processed ", path)
-        return
-    #TO FIX: open(os.path.join(parent_path,"preprocessed_files.txt") stores only 1 path 
-    with open("preprocessed_files.txt","a") as preprocessed_file:
-        preprocessed_file.write(path  + "\n")         
-
-    
     acc = os.path.join(path,"acc.txt")
     obd = os.path.join(path,"obd.txt")
     raw_acc = os.path.join(path,"raw_acc.txt")
@@ -62,34 +55,32 @@ def process_data(path):
     # os.path.exists(acc) or os.path.exists(obd)  
           
     if(not os.path.exists(obd) or (os.stat(ref_file).st_size < empty_ref_file_size)):
-        return
-
-       
+        return   
                         
     for root, subdirs, files in os.walk(path):
             ref_DF = pd.read_csv(ref_file)
             for name in files: 
                 if name.endswith("raw_acc.txt"):
-                    print ("raw_acc.txt")
+                    #print ("raw_acc.txt")
                     ##TOFIX: File doesn't exist error
                     acc_DF = pd.read_csv(raw_acc)
                 elif name.endswith("raw_obd.txt"):
-                    print (ref_file)
+                    #print (ref_file)
                     obd_DF =  pd.read_csv(raw_obd)
                 elif name.endswith("gps.txt"):
-                    print (ref_file)
+                    #print (ref_file)
                     gps_DF =  pd.read_csv(raw_gps)
                 elif name.endswith("raw_grav.txt"):
-                    print (ref_file)
+                    #print (ref_file)
                     grav_DF =  pd.read_csv(raw_grav)
                 elif name.endswith("raw_mag.txt"):
-                    print (ref_file)
+                    #print (ref_file)
                     mag_DF =  pd.read_csv(raw_mag,error_bad_lines=False,skipfooter=1)
                 elif name.endswith("raw_gyro.txt"):
-                    print (ref_file)
+                    #print (ref_file)
                     gyro_DF =  pd.read_csv(raw_gyro)
                 elif name.endswith("raw_rot.txt"):
-                    print (ref_file)
+                    #print (ref_file)
                     rot_DF =  pd.read_csv(raw_rot,error_bad_lines=False,skipfooter=1)
             ref_variable = 'timestamp' # variable of obd file  
             start_time = int(ref_DF[ref_variable].head(1))
@@ -157,7 +148,6 @@ def process_obd(obd_DF, ref_DF, path, start_time, end_time):
         start_time: start time from reference file
         
         end_time: end time from reference file
-        
     """
     raw_obd_1 = os.path.join(path,"obd_resampled.txt")
     raw_obd_2 = os.path.join(path,"obd_smoothed.txt")
@@ -209,14 +199,13 @@ def process_gps(gps_DF,ref_DF, path, start_time, end_time):
         
         start_time: start time from reference file
         
-        end_time: end time from reference file
-        
+        end_time: end time from reference file   
     """
     #Add provider column in processed file
     raw_gps_1 = os.path.join(path,"gps_resampled.txt")
     raw_gps_2 = os.path.join(path,"gps_smoothed.txt")
     gps_DF['system_time'] = gps_DF['system_time'].astype('int64')
-    print(gps_DF['system_time'].dtype)
+   # print(gps_DF['system_time'].dtype)
     gps_DF = gps_DF.loc[(gps_DF['system_time'] >= start_time) & (gps_DF['system_time'] <= end_time)]
     gps_DF['system_time'] = gps_DF['system_time'] - start_time
     gps_DF['system_time'] = pd.to_datetime(gps_DF['system_time'], unit = 'ms')
@@ -249,12 +238,11 @@ def process_grav(grav_DF,ref_DF, path, start_time, end_time):
         start_time: start time from reference file
         
         end_time: end time from reference file
-        
     """
     raw_grav_1 = os.path.join(path,"grav_resampled.txt")
     raw_grav_2 = os.path.join(path,"grav_smoothed.txt")
     grav_DF['sys_time'] = grav_DF['sys_time'].astype('int64')
-    print(grav_DF['sys_time'].dtype)
+    #print(grav_DF['sys_time'].dtype)
     grav_DF = grav_DF.loc[(grav_DF['sys_time'] >= start_time) & (grav_DF['sys_time'] <= end_time)]
     grav_DF['sys_time'] = grav_DF['sys_time'] - start_time
     grav_DF['sys_time'] = pd.to_datetime(grav_DF['sys_time'], unit = 'ms')
@@ -411,10 +399,17 @@ def process_data_main(preprocess_path, frequency):
     """
     sampling_rate = str(1000.0 / frequency);
     sampling_rate = sampling_rate + 'L'
-    print(sampling_rate)
+#   print(sampling_rate)
     for subdir in sub_dir_path(preprocess_path):
         subdirs = sub_dir_path(subdir)
         for subdir_datewise in subdirs:
+            if check_if_processed(subdir_datewise):
+#    print ("Skipping as trip already processed ", path)
+                return
             process_data(subdir_datewise)
+    #TO FIX: open(os.path.join(parent_path,"preprocessed_files.txt") stores only 1 path 
+            with open(os.path.join(parent_path,"preprocessed_files.txt"),"a+") as preprocessed_file:
+                preprocessed_file.write(subdir_datewise  + "\n")
+
         
 #process_data_main(path, sampling_rate)
