@@ -40,12 +40,14 @@ def helper():
     print("Usage: \"help [cmd]\" for function syntax.\n")
     print("These are the VehSense commands used for various tasks:\n")
 
+    longest_cmd = max(cmd_list.keys(), key=len)
+
     for command in sorted(cmd_list):
         prefix = " "
         preferredWidth = 100
-        wrapper = textwrap.TextWrapper(initial_indent=prefix, width=preferredWidth, subsequent_indent=' '*10)
-        print("{:<8} {:<15}".format(
-            command, wrapper.fill(vehSenseCommands[command])))
+        wrapper = textwrap.TextWrapper(initial_indent=prefix,
+                                    width=preferredWidth, subsequent_indent=' '*(len(longest_cmd)+2))
+        print("{:<10} {:<15}".format(command, wrapper.fill(vehSenseCommands[command])))
 
 
 def cmd_help(cmd):
