@@ -37,7 +37,7 @@ def helper():
     """
     Displays the functions of individual commands. This is invoked when user enters "help" in the command-line.
     """
-    print("Usage: \"help [cmd]\" for function syntax.\n")
+    print("Usage: \"help [cmd]\" or simply \"cmd\" for function syntax.\n")
     print("These are the VehSense commands used for various tasks:\n")
 
     longest_cmd = max(cmd_list.keys(), key=len)
@@ -88,7 +88,10 @@ def main():
             print("Exiting VehSense backend.")
             sys.exit()
         elif receivedCmd in cmd_list:
-            cmd_list[receivedCmd](inputString[1:])
+            if len(inputString) == 1:
+                cmd_help(inputString[0])
+            else:
+                cmd_list[receivedCmd](inputString[1:])
         else:
             print("Unrecognized command. Enter \"help [cmd]\" for function syntax, \"help\" for list of available commands")
 
