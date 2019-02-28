@@ -1,3 +1,0 @@
-"OBD_LOGS"
-"Connect to: 00:1D:A5:1B:5C:21"
-"Connected"
