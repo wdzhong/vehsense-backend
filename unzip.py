@@ -11,6 +11,7 @@ import sys
 import traceback
 import os
 import pickle
+# import textwrap
 
 from utils import convert_to_map
 
@@ -19,37 +20,36 @@ def decompress_file(input_string):
     """
     Decompress a given file. Generate a new file within the same address,
     with the same file name without compress extension.
-
-    Parameters
-    ----------
-    filename : str
-        The name (absolute path) of the file to be decompressed
-
-    delete_after_decompress : boolean, default=False
-        If True, then delete the compressed file after decompression. Otherwise, keep it.
-
-    compress_type : str, default="zip"
-        The compress type (i.e. extension)
     """
     # TODO: handle exception FileNotFoundError properly
-    global merge
     if input_string == "syntax":
-        print("unzip [-f filename] [-d directory] [--compress-type='.zip'] [--delete=False] [--merge=True]. If --delete is set to be True, then the original compressed file(s) will be deleted after decompression. If --merge is True, then files with the same prefix will be merged after decompression.")
+        info = """unzip [-f filename] [-d directory] [--compress-type='.zip'] [--delete=False] [--merge=True] [--delete-unzip=True].
+          filename has to include the full path.
+          If --delete is set to be True, then the original compressed file(s) will be deleted after decompression.
+          If --merge is "rue, then files with the same prefix will be merged after decompression.
+          if --delete-unzip is True, then uncompressed files will be deleted after merge."""
+        # wrapper = textwrap.TextWrapper(width=70)
+        # print(wrapper.fill(info))
+        print(info)
         return
     mypath = os.path.dirname(os.path.realpath(__file__))
-    print(mypath)
-    filename = ""
-    dirname = ""
-    input_map = convert_to_map(input_string)
-    dirname = input_map.get('-d')
-    filename = input_map.get('-f', "Null")
-    compress_type = input_map.get('--compress-type', '.zip')
-    delete_after_decompress = input_map.get('--delete', "False")
-    delete_unzip = input_map.get('--delete-unzip', "True")
-    merge = input_map.get('--merge', "True")
-    if(filename != "Null"):
-        filename = os.path.join(mypath, filename)
-        process_file(filename, delete_after_decompress, compress_type, mypath)
+
+    options = convert_to_map(input_string)
+
+    dirname = options.get('-d', None)
+    filename = options.get('-f', None)
+
+    if not filename and not dirname:
+        print("error: either filename or directory is needed")
+        return
+
+    compress_type = options.get('--compress-type', '.zip')
+    delete_after_decompress = options.get('--delete', "False")
+    delete_unzip = options.get('--delete-unzip', "True")
+    merge = options.get('--merge', "True")
+
+    if filename:
+        unzip_file(filename, delete_after_decompress, compress_type)
         return
     mypath = os.path.join(mypath, dirname)
     process_single_directory(mypath, delete_after_decompress, compress_type)
@@ -83,23 +83,41 @@ def process_single_directory(mypath, delete_after_decompress, compress_type):
         data_lines = ""
         for fil in files:
             fil = os.path.join(mypath, fil)
-            process_file(fil, delete_after_decompress, compress_type, mypath)
+            unzip_file(fil, delete_after_decompress, compress_type)
 
 
-def process_file(fil, delete_after_decompress, compress_type, mypath):
+def unzip_file(fil, delete_after_decompress, compress_type):
+    """
+    unzip a single file.
+
+    Parameters
+    ----------
+    fil : str
+        The full path of the file to be uncompressed
+
+    delete_after_decompress : str, "True" or "False"
+        If "True", then delete the original compressed file after unzip
+
+    compress_type : str
+        The extension of the compressed file
+    """
+    if not os.path.isfile(fil):
+        print("unzip_file: ERROR: file %s does NOT exist" % fil)
+        return
     try:
         zip_file = gzip.open(fil)
         data_lines = zip_file.readlines()
-        print(fil)
         uncompressed_filename = fil[:-len(compress_type)]
         with open(uncompressed_filename, "wb") as fp:
             fp.writelines(data_lines)
-        print(delete_after_decompress)
+
         if (delete_after_decompress == "True"):
             print("deleting ", fil)
-            fil = os.path.join(mypath, fil)
             os.remove(fil)
+        else:
+            print("delete after unzip: ", delete_after_decompress)
     except:
+        print("exception happens in unzip %s" % fil)
         pass
 
 
