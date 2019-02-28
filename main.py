@@ -87,7 +87,7 @@ def main():
             sys.exit()
         elif receivedCmd in cmd_list:
             type(inputString)
-            cmd_list[receivedCmd](inputString)
+            cmd_list[receivedCmd](inputString[1:])
         else:
             print("Unrecognized command. Enter \"help [cmd]\" for function syntax, \"help\" for list of available commands")
 
