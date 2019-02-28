@@ -7,9 +7,11 @@ Tested in Python 3.6
 """
 
 import gzip
-import sys,traceback
+import sys
+import traceback
 import os
 import pickle
+
 
 def convert_to_map(input_string):
 
@@ -18,7 +20,7 @@ def convert_to_map(input_string):
 
         if(i % 2 == 0):
             continue
-        print(i ," ", input_string[i])
+        print(i, " ", input_string[i])
         try:
             input_map[input_string[i]] = input_string[i + 1]
 
@@ -26,8 +28,8 @@ def convert_to_map(input_string):
             print("Invalid arguments for preprocess")
     return input_map
 
+
 def decompress_file(input_string):
-    
     """
     Decompress a given file. Generate a new file within the same address,
     with the same file name without compress extension.
@@ -55,20 +57,21 @@ def decompress_file(input_string):
     input_map = convert_to_map(input_string)
     dirname = input_map.get('-d')
     filename = input_map.get('-f', "Null")
-    compress_type = input_map.get('--compress-type','.zip')
+    compress_type = input_map.get('--compress-type', '.zip')
     delete_after_decompress = input_map.get('--delete', "False")
     delete_unzip = input_map.get('--delete-unzip', "True")
     merge = input_map.get('--merge', "True")
     if(filename != "Null"):
-        filename = os.path.join(mypath,filename)
+        filename = os.path.join(mypath, filename)
         process_file(filename, delete_after_decompress, compress_type, mypath)
         return
-    mypath = os.path.join(mypath,dirname)
+    mypath = os.path.join(mypath, dirname)
     process_single_directory(mypath, delete_after_decompress, compress_type)
-    #Merge files
+    # Merge files
     if(merge == "True"):
         merge_directories(mypath, delete_unzip)
     return
+
 
 def merge_directories(mypath, delete_unzip):
     for root, subdirs, files in os.walk(mypath):
@@ -78,21 +81,24 @@ def merge_directories(mypath, delete_unzip):
         for subdir in subdirs:
             if subdir.startswith('.'):
                 continue
-            file_path = os.path.join(mypath,subdir)
+            file_path = os.path.join(mypath, subdir)
             merge_directories(file_path, delete_unzip)
-                   
+
+
 def process_single_directory(mypath, delete_after_decompress, compress_type):
     for root, subdirs, files in os.walk(mypath):
         for subdir in subdirs:
             if subdir.startswith('.'):
                 continue
-            file_path = os.path.join(mypath,subdir)
-            process_single_directory(file_path, delete_after_decompress, compress_type)
+            file_path = os.path.join(mypath, subdir)
+            process_single_directory(
+                file_path, delete_after_decompress, compress_type)
         global data_lines
         data_lines = ""
         for fil in files:
-            fil = os.path.join(mypath,fil)    
+            fil = os.path.join(mypath, fil)
             process_file(fil, delete_after_decompress, compress_type, mypath)
+
 
 def process_file(fil, delete_after_decompress, compress_type, mypath):
     try:
@@ -104,12 +110,12 @@ def process_file(fil, delete_after_decompress, compress_type, mypath):
             fp.writelines(data_lines)
         print(delete_after_decompress)
         if (delete_after_decompress == "True"):
-            print("deleting ",fil)
-            fil = os.path.join(mypath,fil)
+            print("deleting ", fil)
+            fil = os.path.join(mypath, fil)
             os.remove(fil)
     except:
         pass
-    
+
 
 def merge_single_directory(file_path, delete_unzip):
     subfiles = os.listdir(file_path)
