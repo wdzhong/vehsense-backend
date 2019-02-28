@@ -11,6 +11,7 @@ import sys
 import traceback
 import os
 import pickle
+from collections import defaultdict
 # import textwrap
 
 from utils import convert_to_map
@@ -63,15 +64,21 @@ def decompress_file(input_string):
 
 
 def merge_directories(mypath, delete_unzip):
-    for root, subdirs, files in os.walk(mypath):
-        if len(subdirs) == 0:
+    """
+    Merge the uncompressed files within each directory.
+
+    Parameters
+    ----------
+    mypath : str
+        The folder to deal with
+
+    delete_unzip : str, "True" or "False"
+        If "True", uncompressed files will be deleted after merge
+    """
+    for root, subdirs, _ in os.walk(mypath):
+        # only deal with folder without subfolders
+        if len(subdirs) == 0:  # TODO: this can be removed if needed
             merge_single_directory(root, delete_unzip)
-            return
-        for subdir in subdirs:
-            if subdir.startswith('.'):
-                continue
-            file_path = os.path.join(mypath, subdir)
-            merge_directories(file_path, delete_unzip)
 
 
 def process_directory(mypath, delete_after_decompress, compress_type):
@@ -134,96 +141,45 @@ def unzip_file(fil, delete_after_decompress, compress_type):
 
 
 def merge_single_directory(file_path, delete_unzip):
-    subfiles = os.listdir(file_path)
-    acc = []
-    obd = []
-    gyro = []
-    mag = []
-    gps = []
-    for fil in subfiles:
-        file_name = os.path.basename(fil)
-        if "raw_acc" in file_name and "zip" not in file_name:
-            acc.append(file_name)
-        elif "raw_obd" in file_name and "zip" not in file_name:
-            obd.append(file_name)
-        elif "raw_gyro" in file_name and "zip" not in file_name:
-            gyro.append(file_name)
-        elif "raw_mag" in file_name and "zip" not in file_name:
-            mag.append(file_name)
-        elif "gps" in file_name and "zip" not in file_name:
-            gps.append(file_name)
-    acc = sorted(acc)
-    gyro = sorted(gyro)
-    mag = sorted(mag)
-    obd = sorted(obd)
-    gps = sorted(gps)
-    print(acc)
-    print(gyro)
-    print(mag)
-    print(obd)
-    print(gps)
+    """
+    Merge files with same prefix under the given path.
+    Assuming there is NO sub folder within this path.
 
-    if (acc):
-        lines = []
-        for fil in acc:
-            file_name = os.path.join(file_path, fil)
-            file_data = open(file_name)
-            lines.extend(file_data.readlines())
-            if (delete_unzip == "True"):
-                os.remove(file_name)
-        uncompressed_filename = "raw_acc.txt"
-        uncompressed_filename = os.path.join(file_path, uncompressed_filename)
-        with open(uncompressed_filename, 'w') as filehandle:
-            print("Created", uncompressed_filename)
-            filehandle.writelines("%s" % place for place in lines)
-    if (obd):
-        lines = []
-        for fil in obd:
-            file_name = os.path.join(file_path, fil)
-            file_data = open(file_name).readlines()
-            lines.extend(file_data)
-            if (delete_unzip == "True"):
-                os.remove(file_name)
-        uncompressed_filename = "raw_obd.txt"
-        uncompressed_filename = os.path.join(file_path, uncompressed_filename)
-        with open(uncompressed_filename, "w") as fp2:
-            print("Created", uncompressed_filename)
-            fp2.writelines("%s" % place for place in lines)
-    if (gyro):
-        lines = []
-        for fil in gyro:
-            file_name = os.path.join(file_path, fil)
-            file_data = open(file_name)
-            lines.extend(file_data.readlines())
-            file_data.close
+    Parameters
+    ----------
+    file_path : str
+        Folder to deal with
+
+    delete_unzip : str, 'True' or 'False'
+        If 'True', uncompressed files will be deleted after merge.
+    """
+    subfiles = os.listdir(file_path)
+
+    data_type = ['acc', 'obd', 'gps', 'gyro', 'mag']
+    file_extension = '.txt'
+
+    uncompressed_files_dict = defaultdict(list)
+    for fil in subfiles:
+        file_name = os.path.basename(fil)  # TODO: this is not necessary since subfiles are just file names
+        if not file_name.endswith(file_extension):
+            continue
+        for prefix in data_type:
+            if prefix in file_name:
+                uncompressed_files_dict[prefix].append(file_name)
+                break
+
+    for prefix, files in uncompressed_files_dict.items():
+        files = sorted(files)
+        all_lines = []
+        for f in files:
+            file_name = os.path.join(file_path, f)
+            with open(file_name, 'rb') as fp:
+                all_lines.extend(fp.readlines())
             if delete_unzip == "True":
                 os.remove(file_name)
-        uncompressed_filename = "raw_gyro.txt"
-        uncompressed_filename = os.path.join(file_path, uncompressed_filename)
-        with open(uncompressed_filename, "w") as fp3:
-            print("Created", uncompressed_filename)
-            fp3.writelines("%s" % place for place in lines)
-    if (mag):
-        lines = []
-        for fil in mag:
-            file_name = os.path.join(file_path, fil)
-            lines.extend(open(file_name).readlines())
-            if delete_unzip == "True":
-                os.remove(file_name)
-        uncompressed_filename = "raw_mag.txt"
-        uncompressed_filename = os.path.join(file_path, uncompressed_filename)
-        with open(uncompressed_filename, "w") as fp4:
-            print("Created", uncompressed_filename)
-            fp4.writelines("%s" % place for place in lines)
-    if (gps):
-        lines = []
-        for fil in gps:
-            file_name = os.path.join(file_path, fil)
-            lines.extend(open(file_name).readlines())
-            if delete_unzip == "True":
-                os.remove(file_name)
-        uncompressed_filename = "gps.txt"
-        uncompressed_filename = os.path.join(file_path, uncompressed_filename)
-        with open(uncompressed_filename, "w") as fp5:
-            print("Created", uncompressed_filename)
-            fp5.writelines("%s" % place for place in lines)
+        if prefix == 'gps':
+            merged_file = os.path.join(file_path, prefix + ".txt")
+        else:
+            merged_file = os.path.join(file_path, "raw_" + prefix + ".txt")
+        with open(merged_file, 'wb') as fp:
+            fp.writelines(all_lines)
