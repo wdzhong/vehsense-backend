@@ -76,7 +76,9 @@ def main():
     print("Welcome to Vehsense backend utility. Enter \"help\" for list of available commands.")
 
     while True:
-        inputString = input(">>").split()
+        inputString = input(">>").rstrip()
+        inputString = inputString.replace("=", " ")
+        inputString = inputString.split()
         receivedCmd = inputString[0]
         if receivedCmd == "help" and len(inputString) == 1:
             helper()
@@ -86,7 +88,6 @@ def main():
             print("Exiting VehSense backend.")
             sys.exit()
         elif receivedCmd in cmd_list:
-            type(inputString)
             cmd_list[receivedCmd](inputString[1:])
         else:
             print("Unrecognized command. Enter \"help [cmd]\" for function syntax, \"help\" for list of available commands")
