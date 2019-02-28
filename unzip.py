@@ -12,21 +12,7 @@ import traceback
 import os
 import pickle
 
-
-def convert_to_map(input_string):
-
-    input_map = {}
-    for i in range(len(input_string)):
-
-        if(i % 2 == 0):
-            continue
-        print(i, " ", input_string[i])
-        try:
-            input_map[input_string[i]] = input_string[i + 1]
-
-        except:
-            print("Invalid arguments for preprocess")
-    return input_map
+from utils import convert_to_map
 
 
 def decompress_file(input_string):
