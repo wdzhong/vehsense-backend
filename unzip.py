@@ -43,6 +43,10 @@ def decompress_file(input_string):
         print("error: either filename or directory is needed")
         return
 
+    if filename and dirname:
+        print("error: cannot take both filename and directory at the same time.")
+        return
+
     compress_type = options.get('--compress-type', '.zip')
     delete_after_decompress = options.get('--delete', "False")
     delete_unzip = options.get('--delete-unzip', "True")
@@ -51,12 +55,11 @@ def decompress_file(input_string):
     if filename:
         unzip_file(filename, delete_after_decompress, compress_type)
         return
-    mypath = os.path.join(mypath, dirname)
-    process_single_directory(mypath, delete_after_decompress, compress_type)
+    mypath = dirname
+    process_directory(mypath, delete_after_decompress, compress_type)
     # Merge files
-    if(merge == "True"):
+    if merge == "True":
         merge_directories(mypath, delete_unzip)
-    return
 
 
 def merge_directories(mypath, delete_unzip):
@@ -71,18 +74,27 @@ def merge_directories(mypath, delete_unzip):
             merge_directories(file_path, delete_unzip)
 
 
-def process_single_directory(mypath, delete_after_decompress, compress_type):
-    for root, subdirs, files in os.walk(mypath):
-        for subdir in subdirs:
-            if subdir.startswith('.'):
-                continue
-            file_path = os.path.join(mypath, subdir)
-            process_single_directory(
-                file_path, delete_after_decompress, compress_type)
-        global data_lines
-        data_lines = ""
+def process_directory(mypath, delete_after_decompress, compress_type):
+    """
+    unzip all files under given directionry and all its sub directories
+
+    Parameters
+    ----------
+    mypath : str
+        The folder (full path) to be dealt with
+
+    delete_after_decompress : str, "True" or "False"
+        If "True", then original compressed files will be deleted after unzip
+
+    compress_type : str
+        The extension for the compressed files.
+    """
+    for root, _, files in os.walk(mypath):
         for fil in files:
-            fil = os.path.join(mypath, fil)
+            if not fil.endswith(compress_type):
+                continue
+            # TODO: only deal with certain type of data that we are interested
+            fil = os.path.join(root, fil)
             unzip_file(fil, delete_after_decompress, compress_type)
 
 
