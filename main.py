@@ -20,6 +20,8 @@ from size_cmd import size_cmd
 from new_cmd import new_cmd
 
 
+debug = True
+
 vehSenseCommands = {"clean": "move 'bad' trip (based on the input criteria) to a temporary location for manual inspection before moving to trash. Move to trash immediately if [-f] is used."}
 vehSenseCommands["help cmd"] = "displays the syntax and description for the command."
 vehSenseCommands["size"] = "display overall size, and size for each user"
@@ -69,11 +71,35 @@ def cmd_help(cmd):
         cmd_list[cmd]("syntax")
 
 
-def main():
+def load_config():
+    """
+    Load the configuration for basic setting
+    """
+    config_file = os.path.join(os.getcwd(), 'config.txt')
+
+    configs = {}
+    with open(config_file, 'r') as fp:
+        for line in fp:
+            line = line.rstrip()
+            line = line.replace(" ", "")
+            segs = line.split(",")
+            configs[segs[0]] = segs[1]
+
+    return configs
+
+
+def main(args):
     """
     Takes the user input and invokes the appropriate method.
     """
     print("Welcome to Vehsense backend utility. Enter \"help\" for list of available commands.")
+    configs = load_config()
+
+    if args.data_path:
+        configs["data_path"] = args.data_path
+
+    if debug:
+        print(configs)
 
     while True:
         inputString = input(">>").rstrip()
@@ -99,8 +125,9 @@ def main():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--test', help="used for CircleCI")
+    parser.add_argument('-d', '--data_path', help='the default working directory while this script running')
     args = parser.parse_args()
     if args.test:
         print("test passed")
         sys.exit()
-    main()
+    main(args)
