@@ -18,14 +18,19 @@ The program should be running like a prompt which can accept predefined commands
 - **clients**: list all clients' names
 - **exit**: terminal the program. Save current status.
 - **new [-t time]**: show newly added data since last time running this command or specified `time` point
+- **preprocess \[-d directory] \[-f frequency=200]**: preprocess files under the given directory. This can be called after unzip with merge. `clean` should have been called before this. Sync the start time of different type of data. Choose the latest one (may be added another couple of seconds) among all starts as the starting timestamp of the data that we are interested in. Then carry out interpolation.
+  - ``-d directory`` The directory to deal with
+  - ``-f frequency=200``: the frequency we want to interpolate. Default is 200Hz, i.e., 5ms
+- **rm -d directory -p prefix -e extension \[-r=False]**: remove files that meet the given requirement under given directory:
+    - `-d directory` The directory to start with.
+    - `-p prefix` The prefix of files to be removed.
+    - `-e extension` The extension of the files to be removed.
+    - `-r=False` Recursive. If `True`, then remove files from sub folders as well.
 - **size**: overall size, and size for each user
 - **unzip \[-f filename] \[-d directory] \[--compress-type='.zip'] \[--delete=False] \[--merge=True] \[--delete-unzip=True]**: decompress the speficied file, or compressed files under specified directory.
   - If ``--delete`` is set to be ``True``, then the original compressed file(s) will be deleted after decompression.
   - If ``--merge`` is ``True``, then files with the same prefix will be merged after decompression.
   - if ``--delete-unzip`` is ``True``, then the unziped files will be deleted after merge.
-- **preprocess \[-d directory] \[-f frequency=200]**: preprocess files under the given directory. This can be called after unzip with merge. `clean` should have been called before this. Sync the start time of different type of data. Choose the latest one (may be added another couple of seconds) among all starts as the starting timestamp of the data that we are interested in. Then carry out interpolation.
-  - ``-d directory`` The directory to deal with
-  - ``-f frequency=200``: the frequency we want to interpolate. Default is 200Hz, i.e., 5ms
 - **etc**.
 
 Some information needs to be saved and read at the end and start of the program, respectively, e.g. the time point in command new, backup directory, etc.
