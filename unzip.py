@@ -16,6 +16,7 @@ from collections import defaultdict
 
 from utils import convert_to_map
 
+debug = True
 
 def decompress_file(input_string):
     """
@@ -52,6 +53,9 @@ def decompress_file(input_string):
     delete_after_decompress = options.get('--delete', "False")
     delete_unzip = options.get('--delete-unzip', "True")
     merge = options.get('--merge', "True")
+
+    if debug:
+        print('--delete=%s, --merge=%s, --delete-unzip=%s' % (delete_after_decompress, merge, delete_unzip))
 
     if filename:
         unzip_file(filename, delete_after_decompress, compress_type)
@@ -96,13 +100,26 @@ def process_directory(mypath, delete_after_decompress, compress_type):
     compress_type : str
         The extension for the compressed files.
     """
+    data_type = ['acc', 'obd', 'gps', 'gyro', 'mag']
     for root, _, files in os.walk(mypath):
+        if not files:
+            continue
+
+        if debug:
+            print("unzip: deal with %s" % root)
         for fil in files:
-            if not fil.endswith(compress_type):
-                continue
-            # TODO: only deal with certain type of data that we are interested
-            fil = os.path.join(root, fil)
-            unzip_file(fil, delete_after_decompress, compress_type)
+            # important: delete (possible) old txt files so that they won't get merge again
+            if fil.endswith('.txt'):
+                for prefix in data_type:
+                    if prefix in fil:
+                        fullname = os.path.join(root, fil)
+                        os.remove(fullname)
+                        break
+
+            elif fil.endswith(compress_type):
+                # TODO: only deal with certain type of data that we are interested
+                fil = os.path.join(root, fil)
+                unzip_file(fil, delete_after_decompress, compress_type)
 
 
 def unzip_file(fil, delete_after_decompress, compress_type):
@@ -131,10 +148,10 @@ def unzip_file(fil, delete_after_decompress, compress_type):
             fp.writelines(data_lines)
 
         if (delete_after_decompress == "True"):
-            print("deleting ", fil)
+            if debug:
+                print("deleting ", fil)
             os.remove(fil)
-        else:
-            print("delete after unzip: ", delete_after_decompress)
+
     except:
         print("exception happens in unzip %s" % fil)
         pass
@@ -169,9 +186,16 @@ def merge_single_directory(file_path, delete_unzip):
                 break
 
     for prefix, files in uncompressed_files_dict.items():
-        files = sorted(files)
+        files = sorted(files, key=lambda x: get_int_from_str(x))  # sort directly is not right here, since 'raw_acc8' will be larger than 'raw_acc70'.
         all_lines = []
+        last_number = None
         for f in files:
+            cur_number = get_int_from_str(f)
+            if last_number and last_number + 1 != cur_number:
+                msg = "missing file: " + prefix + "_" + str(last_number + 1) + '.txt'
+                print(msg)
+            last_number = cur_number
+
             file_name = os.path.join(file_path, f)
             with open(file_name, 'rb') as fp:
                 all_lines.extend(fp.readlines())
@@ -181,5 +205,28 @@ def merge_single_directory(file_path, delete_unzip):
             merged_file = os.path.join(file_path, prefix + ".txt")
         else:
             merged_file = os.path.join(file_path, "raw_" + prefix + ".txt")
+
+        # check if the merged file is in right order, i.e. time should be non decreasing
+        if prefix != 'obd':  # TODO: better way to handle obd file
+            for i in range(2, len(all_lines)):  # assuming there is a header
+                if int(all_lines[i][0]) < (all_lines[i - 1][0]):  # assuming time is the first column; convert to int, in case of '35' > '241'
+                    print("error: merge file: %s, line # %d" % (merged_file, i))
+
         with open(merged_file, 'wb') as fp:
             fp.writelines(all_lines)
+
+
+def get_int_from_str(string):
+    """
+    get an integer from a given string. Return 0 if not found
+    """
+    result = ''
+    for s in string:
+        if s.isdigit():
+            result += s
+    try:
+        ans = int(result)
+        return ans
+    except:
+        print("no digit found in given string: %s" % string)
+        return 0  # TODO: return 0 might cause issue if there is already a file with 0
