@@ -11,7 +11,8 @@ parent_path = os.path.dirname(os.path.realpath(__file__))
 # VehSense data directory
 data_path = os.path.join(parent_path, "vehsense-backend-data")
 
-def new_cmd(input_string):
+
+def new_cmd(input_string, configs=None):
     """
     Performs the operations for the new command, i.e, displays the list of files which were created after last running the command.
 
@@ -19,23 +20,22 @@ def new_cmd(input_string):
         input_string (str): array of options for the new command.
     """
     if(input_string == "syntax"):
-        print(
-            "new -t [YYYY-MM-DD HH:MM:SS] to display the files created after the provided time")
+        print("new -t [YYYY-MM-DD HH:MM:SS] to display the files created after the provided time")
     else:
         pattern = '%Y-%m-%d %H:%M:%S-04:00'
         pattern1 = '%Y-%m-%d %H:%M:%S'
         from_zone = tz.gettz('UTC')
         to_zone = tz.gettz('America/New_York')
 
-        if (len(input_string) == 1):
+        if len(input_string) == 1:
             my_file = open(os.path.join(parent_path, "new_time.txt"), "r")
             specified_time = my_file.read()
             my_file.close()
-        elif (len(input_string) != 4):
+        elif len(input_string) != 4:
             print("Please enter correct syntax")
             return
         else:
-            specified_time = input_string[2]+" "+input_string[3]
+            specified_time = input_string[2] + " " + input_string[3]
         with open(os.path.join(parent_path, "new_time.txt"), "w") as my_file:
             utc = datetime.utcnow()
             utc = str(utc).split(".")[0]

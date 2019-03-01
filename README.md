@@ -17,7 +17,7 @@ The program should be running like a prompt which can accept predefined commands
   - `-f`: Move to trash immediately if `-f` is used.
 - [ ] **clients**: list all clients' names
 - [x] **exit**: terminal the program. Save current status.
-- [ ] **new [-t time]**: show newly added data since last time running this command or specified `time` point
+- [ ] **new [-t mm/dd/yyyy]**: show newly added data (trips) since the specified `time` point, last time running this command, or `yesterday`.
 - [ ] **preprocess \[-d directory] \[-f frequency=200]**: preprocess files under the given directory. This can be called after unzip with merge. `clean` should have been called before this. Sync the start time of different type of data. Choose the latest one (may be added another couple of seconds) among all starts as the starting timestamp of the data that we are interested in. Then carry out interpolation.
   - ``-d directory`` The directory to deal with
   - ``-f frequency=200``: the frequency we want to interpolate. Default is 200Hz, i.e., 5ms

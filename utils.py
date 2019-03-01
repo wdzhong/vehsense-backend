@@ -13,14 +13,11 @@ def convert_to_map(list_str):
         {key: value}
     """
     key_value = {}
-    if len(list_str) % 2 != 0:
-        print("Error: the number of element in the list must be even.")
-        return {}
     for i in range(len(list_str)):
-        if(i % 2 != 0):
+        if i % 2 != 0:
             continue
         try:
             key_value[list_str[i]] = list_str[i + 1]
         except:
-            print("Invalid arguments")
+            print("Invalid number of arguments, which should be even.")
     return key_value

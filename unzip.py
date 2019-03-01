@@ -18,7 +18,7 @@ from utils import convert_to_map
 
 debug = True
 
-def decompress_file(input_string):
+def decompress_file(input_string, configs=None):
     """
     Decompress a given file. Generate a new file within the same address,
     with the same file name without compress extension.
@@ -40,6 +40,9 @@ def decompress_file(input_string):
 
     dirname = options.get('-d', None)
     filename = options.get('-f', None)
+
+    if not dirname and configs:
+        dirname = configs['data_path']
 
     if not filename and not dirname:
         print("error: either filename or directory is needed")

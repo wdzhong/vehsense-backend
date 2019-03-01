@@ -71,11 +71,21 @@ def cmd_help(cmd):
         cmd_list[cmd]("syntax")
 
 
-def load_config():
+def load_config(dir):
     """
     Load the configuration for basic setting
+
+    Parameters
+    ----------
+    dir : str
+        The folder that contains the config file
+
+    Returns
+    -------
+    configs : dict
+        Configs
     """
-    config_file = os.path.join(os.getcwd(), 'config.txt')
+    config_file = os.path.join(dir, 'config.txt')
 
     configs = {}
     with open(config_file, 'r') as fp:
@@ -93,10 +103,12 @@ def main(args):
     Takes the user input and invokes the appropriate method.
     """
     print("Welcome to Vehsense backend utility. Enter \"help\" for list of available commands.")
-    configs = load_config()
 
+    data_path = '.data'
     if args.data_path:
-        configs["data_path"] = args.data_path
+        data_path = args.data_path
+    configs = load_config(data_path)
+    configs["data_path"] = data_path
 
     if debug:
         print(configs)
@@ -112,12 +124,44 @@ def main(args):
             cmd_help(inputString[1])
         elif receivedCmd == "exit":
             print("Exiting VehSense backend.")
-            sys.exit()
+            resume = False
+            while True:
+                try:
+                    choice = input("Save config? (y/n): ").rstrip().lower()
+                    if choice[0] == 'y':
+                        # TODO: save config. But where to put it?
+                        print(configs)
+                        break
+                    elif choice[0] == 'n':
+                        print("quit without saving config")
+                        break
+                    elif choice == 'resume':
+                        print('program resume')
+                        resume = True
+                        break
+                except:
+                    continue
+
+            if not resume:
+                sys.exit()
+
         elif receivedCmd in cmd_list:
             if len(inputString) == 1:
                 cmd_help(inputString[0])
             else:
-                cmd_list[receivedCmd](inputString[1:])
+                cmd_list[receivedCmd](inputString[1:], configs)
+        elif receivedCmd == 'cd':
+            # TODO: do we need to reload config? DO NOT use this command for now
+            if len(inputString) == 2:
+                if os.path.isdir(inputString[1]):
+                    configs = load_config(config_file)
+                    configs['data_path'] = inputString[1]
+                else:
+                    print("given folder does not exist.")
+            else:
+                print("missing args")
+        elif receivedCmd == 'dir':
+            print(configs['data_path'])
         else:
             print("Unrecognized command. Enter \"help [cmd]\" for function syntax, \"help\" for list of available commands")
 
