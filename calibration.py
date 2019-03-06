@@ -7,6 +7,7 @@ Tested with Python 3.x
 import argparse
 import os
 import math
+import sys
 
 import numpy as np
 from numpy.linalg import norm
@@ -18,6 +19,39 @@ import utils
 import constants
 
 debug = True
+
+
+def valid_obd_file(obd_file):
+    """
+    Check if the content of the given OBD file is valid, i.e. header,
+    followed by lines of data.
+
+    Parameter
+    ---------
+    obd_file : str
+        The path of the OBD file
+
+    Return
+    ------
+    True if the content of the file is value; False, otherwise.
+    """
+    if not os.path.isfile(obd_file):
+        return False
+
+    with open(obd_file, 'r') as fp:
+        _ = fp.readline()
+        lines = fp.readlines()
+
+        try:
+            line = lines[0]
+            line = line.replace('"', '').rstrip().split(',')
+
+            # assume that the first column is time or others that can be cast to float
+            _ = float(line[0])
+        except:
+            return False
+
+    return True
 
 
 def calculate_angle(v1, v2):
@@ -41,7 +75,7 @@ def calculate_angle(v1, v2):
     return np.arccos(cos_a)
 
 
-def get_j(trip, acc, gravity_component):
+def get_j(trip, acc, gravity_component, require_obd=False):
     """
     Get vector j from accelerating/decelerating in straight line.
 
@@ -53,40 +87,69 @@ def get_j(trip, acc, gravity_component):
     acc : 2D numpy array
         [[time, x, y, z]]. After removing the gravity component.
 
+    gravity_component : array
+        The gravity components that are applied to the 3 axes.
+
+    require_obd : boolean, default=False
+        If True, then obd file is needed, which is mainly to retrieve speed.
+
     Returns
     -------
     j : vector
         1*3
     """
     j = [1.0] * 3
-    # Since most of time, the car is driving straight, we first get the decelerate period.
-    # since we don't have OBD data for most of data collected from paratransit
-    # or Stampede,  use GPS approximately
-    # the reason to use deceleration is that deceleration usually happens ahead of
-    # stop sign or traffic light, whereas acceleration could happen when turning
-    # after stop sign
-    # but we can use acceleration period near the top speed
-    gps_file = os.path.join(trip, constants.GPS_FILE_NAME)
 
-    # use the system_time instead of timestamp,
-    # because timestamp sometime is not strictly increasing.
-    # the data with provider 'network' has been filtered out during reading
-    gps = utils.read_csv_file(gps_file, columns=[1, 4])  # time, speed
+    # The reason to use deceleration is that deceleration usually happens ahead of
+    # stop sign or traffic light, whereas acceleration could happen when turning
+    # after stop sign, which means the deceleration is more likely to happen in
+    # straight line.
+    # but we still use acceleration period for now.
+    # If we change to use deceleration later, we need to revert the sign
+    # because deceleration aligns with the negative direction of j.
+
+    obd_file = os.path.join(trip, constants.OBD_FILE_NAME)
+    if valid_obd_file(obd_file):
+        time_speed = utils.read_csv_file(obd_file, columns=[0, 2])
+        for line in time_speed:
+            if len(line) < 2:
+                continue
+            line[1] = line[1].split('km/h')[0]
+    else:
+        if require_obd:
+            # throw error
+            print("Error: valid OBD file %s is required to get calibration vector j." % obd_file)
+            sys.exit()
+
+        # Because we don't have OBD data for most of data collected from paratransit
+        # or Stampede, we have to use speed from GPS, although it is not that accurate.
+
+        gps_file = os.path.join(trip, constants.GPS_FILE_NAME)
+
+        # TODO: GPS file might not be good
+        # which should be taken care of by the clean in preprocess
+
+        # use the system_time instead of timestamp,
+        # because timestamp sometime is not strictly increasing.
+        # the data with provider 'network' has been filtered out during reading
+        time_speed = utils.read_csv_file(gps_file, columns=[1, 4])  # time, speed
+
+    # TODO: we don't need to use all data
 
     # we can get one point only, but it might be not accurate enough.
     # since it is moving straight, there will be only acceleration along
     # with y-axis in car's coordinate, and in phone's coordinate,
     # the value in each axis is proportional to the acceleration
     # so as their mean value in a time window, which can be easily proved
-    new_gps = []
-    for row in gps:
+    new_time_speed = []
+    for row in time_speed:
         new_row = [int(row[0]), float(row[1])]
-        new_gps.append(new_row)
-    new_gps = np.array(new_gps)
-    gps = new_gps
+        new_time_speed.append(new_row)
+    new_time_speed = np.array(new_time_speed)
+    time_speed = new_time_speed
 
     if debug:
-        speed = [float(s) for s in gps[:, 1]]
+        speed = [float(s) for s in time_speed[:, 1]]
         plt.plot(speed, '-*')
 
     # find all increasing time period
@@ -96,16 +159,16 @@ def get_j(trip, acc, gravity_component):
     longest_acc = 0
     longest_acc_period = []  # the line number of the start and end of the longest acc period
     min_accelerate_threshold = 2  # TODO: adjust the value. Setting too small could yield too many candidates.
-    while start + 1 < len(gps):
-        while start + 1 < len(gps) and gps[start][1] >= gps[start + 1][1]:
+    while start + 1 < len(time_speed):
+        while start + 1 < len(time_speed) and time_speed[start][1] >= time_speed[start + 1][1]:
             start += 1
-        while start + 1 < len(gps) and gps[start][1] < gps[start + 1][1]:
+        while start + 1 < len(time_speed) and time_speed[start][1] <= time_speed[start + 1][1]:
             start += 1
-        if start + 1 >= len(gps):
+        if start + 1 >= len(time_speed):
             break
         peak = start
         count = 0
-        while peak > 0 and gps[peak][1] > gps[peak - 1][1]:
+        while peak > 0 and time_speed[peak][1] >= time_speed[peak - 1][1]:
             peak -= 1
             count += 1
         if count >= min_accelerate_threshold:
@@ -118,13 +181,18 @@ def get_j(trip, acc, gravity_component):
                 longest_acc_period = [peak, start]
         start += 1
 
+    if not accelerating_periods:
+        print("Error: cannot find accelerating period in calculating vector j, %s" % trip)
+        sys.exit()
+
     # calculate the j for each of the period
     # and to see how different they are
+    # TODO: maybe just calculate from the longest period
     acc_time = [int(t) for t in acc[:, 0]]
     cloest_angle = 0
     for period in accelerating_periods:
         start_index, end_index = period[0], period[1]
-        start_time, end_time = gps[start_index][0], gps[end_index][0]
+        start_time, end_time = time_speed[start_index][0], time_speed[end_index][0]
 
         acc_start_index = bisect.bisect(acc_time, start_time)
         acc_end_index = bisect.bisect(acc_time, end_time)
@@ -142,8 +210,8 @@ def get_j(trip, acc, gravity_component):
                 cloest_angle = angle
                 j = _acc
                 if debug:
-                    print(j)
-                    print('angle: %f' % angle)
+                    print(norm_vector(j))
+                    print('angle (degree): %f' % (angle / math.pi * 180))
 
         '''
         # assume that when the car reaches its highest speed, it goes straight
@@ -265,7 +333,7 @@ def norm_vector(vector):
     return normed
 
 
-def get_calibration_parameters(trip, require_obd):
+def get_calibration_parameters(trip, require_obd, overwrite=False):
     """
     Get the calibration parameters for a single trip, and save them into a file
     under current folder.
@@ -277,13 +345,23 @@ def get_calibration_parameters(trip, require_obd):
 
     require_obd : boolean
         If True, then OBD file will be needed for calibration
+
+    overwrite : boolean, default=False
+        If True, overwrite the existing calibration parameter file.
     """
+    if not overwrite:
+        calib_file = os.path.join(trip, constants.CALIBRATION_FILE_NAME)
+        if os.path.isfile(calib_file):
+            if debug:
+                print("%s already exists. And overwrite is set to be %s. Skip." % (calib_file, overwrite))
+            return
+
     acc_file = os.path.join(trip, constants.ACC_FILE_NAME)
     acc = utils.read_csv_file(acc_file, columns=[1, 3, 4, 5])  # get numpy array
 
     gravity_component = get_gravity_from_acc(acc)
     acc_wt_gravity = remove_gravity_component(acc, gravity_component)
-    j = get_j(trip, acc_wt_gravity, gravity_component)
+    j = get_j(trip, acc_wt_gravity, gravity_component, require_obd=require_obd)
 
     gravity_component_norm = norm_vector(gravity_component)
     j_norm = norm_vector(j)
@@ -299,7 +377,7 @@ def get_calibration_parameters(trip, require_obd):
     return ans
 
 
-def calibration(data_path: str, require_obd: bool, overwrite=True) -> None:
+def calibration(data_path: str, require_obd: bool, overwrite=False) -> None:
     """
     Get calibration parameters for all folders and sub folders under given path.
 
@@ -312,11 +390,11 @@ def calibration(data_path: str, require_obd: bool, overwrite=True) -> None:
         If True, then OBD file is needed, and exception will be thrown out
         if OBD file does not exist.
 
-    overwrite : boolean, default=True
+    overwrite : boolean, default=False
         If True, then overwrite the existing calibration parameter file.
     """
     for _root, _, _files in os.walk(data_path):
-        if not _files:
+        if not _files or (len(_files) == 1 and '.DS_Store' in _files):
             continue
 
         if constants.ACC_FILE_NAME not in _files:
@@ -325,13 +403,7 @@ def calibration(data_path: str, require_obd: bool, overwrite=True) -> None:
                 print('no acc')
             continue
 
-        if not overwrite:
-            calib_file = os.path.join(_root, constants.CALIBRATION_FILE_NAME)
-            if os.path.isfile(calib_file):
-                if debug:
-                    print("%s already exists. And overwrite is set to be %s. Skip" % (calib_file, overwrite))
-                continue
-        get_calibration_parameters(_root, require_obd)
+        get_calibration_parameters(_root, require_obd, overwrite)
 
 
 def parse_arguments():
@@ -364,4 +436,4 @@ def parse_arguments():
 
 if __name__ == '__main__':
     data_path, require_obd = parse_arguments()
-    calibration(data_path, require_obd)
+    calibration(data_path, require_obd, overwrite=True)
