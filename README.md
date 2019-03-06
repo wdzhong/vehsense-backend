@@ -7,7 +7,7 @@ Implement coordinate alignment algorithm used in paper `Wang, Yan, et al. "Sensi
   - [ ] Use different number of data will yield different result. Need to figure out how to get a more reliable result.
 - [x] Derive **j**
   - [x] Remove the gravity component obtained from last step
-  - [x] Get all the periods of car accelerating through GPS data
+  - [x] Get all the periods of car accelerating through OBD or GPS data.
   - [x] Check the acc readings within all the selected periods, and pick up the acc reading that is mostly orthogonal to the gravity component as **j**
     - [ ] Use gyroscope to fine tune **j**, i.e. check if the vehicle is driving straight in the selected periods
 - [x] Obtain **i**
