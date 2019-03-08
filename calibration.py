@@ -411,10 +411,12 @@ def parse_arguments():
     TODO: doc
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('--d', dest='data_path', type=str,
+    parser.add_argument('-d', '--data_path', type=str,
                         help="The directory that contains the data")
-    parser.add_argument('--obd', dest='require_obd', type=bool, default=False,
-                        help="If set to True, then folders without obd file will not be ignored")
+    parser.add_argument('-obd', '--require_obd', default=False, action='store_true',
+                        help="If used, then trips without obd file will throw out error")
+    parser.add_argument('-ow', '--overwrite', default=False, action='store_true',
+                        help='If used, then overwrite the existing calibration parameter file.')
     # TODO: add more
     args = parser.parse_args()
 
@@ -431,9 +433,10 @@ def parse_arguments():
         print("Options:")
         print("data path: %s" % data_path)
         print("require OBD: %s" % args.require_obd)
-    return data_path, args.require_obd
+        print('Overwrite: %s' % args.overwrite)
+    return data_path, args.require_obd, args.overwrite
 
 
 if __name__ == '__main__':
-    data_path, require_obd = parse_arguments()
-    calibration(data_path, require_obd, overwrite=True)
+    data_path, require_obd, overwrite = parse_arguments()
+    calibration(data_path, require_obd, overwrite=overwrite)
