@@ -227,12 +227,73 @@ def get_j(trip, acc, gravity_component, require_obd=False):
         print("Error: cannot find accelerating period in calculating vector j, %s" % trip)
         sys.exit()
 
+    acc_time = [int(t) for t in acc[:, 0]]  # just want to make sure the type
+
+    # TODO: remove repeative calculation
+
+    min_degree = 89.0
+    max_degree = 91.0
+    # find the dominate axis and its sign
+    acc_sum = np.zeros(3)
+    for period in accelerating_periods:
+        start_index, end_index = period[0], period[1]
+        start_time, end_time = time_speed[start_index][0], time_speed[end_index][0]
+
+        acc_start_index = bisect.bisect(acc_time, start_time)
+        acc_end_index = bisect.bisect(acc_time, end_time)
+
+        for index in range(acc_start_index, acc_end_index):
+            _acc = acc[index, 1:]
+            _acc = norm_vector(_acc)
+
+            angle = calculate_angle(_acc, gravity_component)
+            angle_degree = angle / math.pi * 180
+            if angle_degree < min_degree or angle_degree > max_degree:
+                continue
+
+            # TODO: add gyroscope check here
+
+            acc_sum += np.abs(norm_vector(_acc))
+
+    dominate_index = np.argmax(acc_sum)
+
+
+    # get the sign of the dominate axis
+    dominate_sign = 0
+    for period in accelerating_periods:
+        start_index, end_index = period[0], period[1]
+        start_time, end_time = time_speed[start_index][0], time_speed[end_index][0]
+
+        acc_start_index = bisect.bisect(acc_time, start_time)
+        acc_end_index = bisect.bisect(acc_time, end_time)
+
+        for index in range(acc_start_index, acc_end_index):
+            _acc = acc[index, 1:]
+            _acc = norm_vector(_acc)
+
+            angle = calculate_angle(_acc, gravity_component)
+            angle_degree = angle / math.pi * 180
+            if angle_degree < min_degree or angle_degree > max_degree:
+                continue
+
+            # TODO: add gyroscope check here
+
+            _acc_abs = np.abs(_acc)
+            if np.argmax(_acc_abs) != dominate_index:
+                continue
+
+            if _acc[dominate_index] > 0:
+                dominate_sign += 1
+            else:
+                dominate_sign -= 1
+
+
     # calculate the j for each of the period
     # and to see how different they are
-    # TODO: maybe just calculate from the longest period
-    acc_time = [int(t) for t in acc[:, 0]]
     cloest_angle = 0
     for period in accelerating_periods:
+    # TODO: maybe just calculate from the longest period
+    # for period in [longest_acc_period]:
         start_index, end_index = period[0], period[1]
         start_time, end_time = time_speed[start_index][0], time_speed[end_index][0]
 
@@ -244,15 +305,30 @@ def get_j(trip, acc, gravity_component, require_obd=False):
         # this only works if we have the correct/right/accurate gravity component
         for index in range(acc_start_index, acc_end_index):
             _acc = acc[index, 1:]
+            _acc = norm_vector(_acc)
+
+            # use mean instead?
+            # _acc = np.mean(acc[index: min(index + 1, acc_end_index), 1:], axis=0)
             angle = calculate_angle(_acc, gravity_component)
 
+            angle_degree = angle / math.pi * 180
+            if angle_degree < min_degree or angle_degree > max_degree:
+                continue
+
             # TODO: add gyroscope check here
+
+            _acc_abs = np.abs(_acc)
+            if np.argmax(_acc_abs) != dominate_index:
+                continue
+
+            if _acc[dominate_index] * dominate_sign < 0:
+                continue
 
             if abs(angle - math.pi / 2) < abs(cloest_angle - math.pi / 2):
                 cloest_angle = angle
                 j = _acc
                 if debug:
-                    print(norm_vector(j))
+                    print_floats(*norm_vector(j))
                     print('angle (degree): %f' % (angle / math.pi * 180))
 
         '''
@@ -267,6 +343,9 @@ def get_j(trip, acc, gravity_component, require_obd=False):
         '''
 
     if debug:
+        print("sign and index:", end='')
+        print(dominate_sign, dominate_index)
+
         plt.draw()
         plt.show()
 
