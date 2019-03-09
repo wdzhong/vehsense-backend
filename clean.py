@@ -89,6 +89,50 @@ def clean_directory(move_trash, subdir):
                         return
 
 
+def valid_gps(root, gps_max_interval, min_duration):
+    """
+    Check the gps file is valid or not
+
+    Parameters
+    ----------
+    root : str
+        The folder contains the gps file.
+
+    gps_max_interval : int
+        The maximum sampling interval of a good trip.
+
+    min_duration : int
+        The minimum duration of a good trip.
+
+    Return
+    ------
+    valid : bool
+        True if the gps file is good. Fasle, otherwise.
+    """
+    gps_file = os.path.join(root, constants.GPS_FILE_NAME)
+    if not os.path.isfile(gps_file):
+        if debug:
+            print("no gps file %s" % root)
+        return False
+
+    time_speed = read_csv_file(gps_file, columns=[1, 4])
+    trip_duration = (time_speed[-1][0] - time_speed[0][0]) / 1000.0  # seconds
+    ave_time = trip_duration / len(time_speed)
+    if ave_time > gps_max_interval:
+        if debug:
+            print("Trip: %s" % root)
+            print("average interval of GPS samples: %.2f seconds, which is too large." % ave_time)
+        return False
+
+    if trip_duration / 60.0 < min_duration:
+        if debug:
+            print("Trip: %s" % root)
+            print("Trip is too short: %.2f minutes." % (trip_duration / 60.0))
+        return False
+
+    return True
+
+
 def deal_bad_trip(root, force_delete, temp_folder):
     """
     Deal with bad trip, either delete it or move it to temp_folder
