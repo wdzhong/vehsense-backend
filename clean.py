@@ -88,6 +88,46 @@ def clean_directory(move_trash, subdir):
                     except:
                         return
 
+def valid_acc(root):
+    """
+    TODO:
+    """
+    acc_file = os.path.join(root, constants.ACC_FILE_NAME)
+    if not os.path.isfile(acc_file):
+        if debug:
+            print("Invalid acc file %s" % acc_file)
+        return False
+
+    return True
+
+
+def valid_gyro(root):
+    """
+    TODO:
+    """
+    gyro_file = os.path.join(root, constants.GYRO_FILE_NAME)
+    if not os.path.isfile(gyro_file):
+        if debug:
+            print("Invalid gyro file %s" % gyro_file)
+        return False
+
+    return True
+
+
+def valid_obd(root):
+    """
+    TODO:
+    """
+    obd_file = os.path.join(root, constants.OBD_FILE_NAME)
+    if not os.path.isfile(obd_file):
+        if debug:
+            print("Invalid obd file %s" % obd_file)
+        return False
+
+    # TODO: more check
+
+    return True
+
 
 def valid_gps(root, gps_max_interval, min_duration):
     """
