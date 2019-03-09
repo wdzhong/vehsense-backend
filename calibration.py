@@ -65,6 +65,34 @@ def valid_obd_file(obd_file):
     return True
 
 
+def valid_gps_file(gps_file):
+    """
+    Check if the content of the given gps file is valid.
+
+    Parameter
+    ---------
+    gps_file : str
+        The path of the gps file
+
+    Return
+    ------
+    True if the content of the file is value; False, otherwise.
+    """
+    if not os.path.isfile(gps_file):
+        return False
+
+    try:
+        time_speed = utils.read_csv_file(gps_file, columns=[1, 4])  # time, speed
+        ave_time = (time_speed[-1][0] - time_speed[0][0]) / 1000.0 / len(time_speed)
+        if ave_time > 5:  # TODO: might need to be adjusted
+            print("average interval of GPS samples: %.2f seconds, which is too large." % ave_time)
+            return False
+    except:
+        return False
+
+    return True
+
+
 def calculate_angle(v1, v2):
     """
     Calculate the angle ([0, Pi]) between two vectors
@@ -139,6 +167,9 @@ def get_j(trip, acc, gravity_component, require_obd=False):
 
         # TODO: GPS file might not be good
         # which should be taken care of by the clean in preprocess
+        if not valid_gps_file(gps_file):
+            print("Error: valid GPS file %s is required to get calibration vector j." % gps_file)
+            return j
 
         # use the system_time instead of timestamp,
         # because timestamp sometime is not strictly increasing.
