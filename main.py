@@ -22,7 +22,7 @@ from new_cmd import new_cmd
 
 debug = True
 
-vehSenseCommands = {"clean": "move 'bad' trip (based on the input criteria) to a temporary location for manual inspection before moving to trash. Move to trash immediately if [-f] is used."}
+vehSenseCommands = {"clean": "move 'bad' trip (based on the input criteria) to a temporary location for manual inspection or delete immediately as requst."}
 vehSenseCommands["help cmd"] = "displays the syntax and description for the command."
 vehSenseCommands["size"] = "display overall size, and size for each user"
 vehSenseCommands["new"] = "show newly added data since last time running this command or specified time point"
@@ -104,7 +104,7 @@ def main(args):
     """
     print("Welcome to Vehsense backend utility. Enter \"help\" for list of available commands.")
 
-    data_path = '.data'
+    data_path = './data'
     if args.data_path:
         data_path = args.data_path
     configs = load_config(data_path)
@@ -154,7 +154,7 @@ def main(args):
             # TODO: do we need to reload config? DO NOT use this command for now
             if len(inputString) == 2:
                 if os.path.isdir(inputString[1]):
-                    configs = load_config(config_file)
+                    configs = load_config(data_path)
                     configs['data_path'] = inputString[1]
                 else:
                     print("given folder does not exist.")
