@@ -4,6 +4,11 @@
 
 Deal with data collected from vehsense app.
 
+## Requirements
+- `Python 3.x`
+- Packages: `numpy`
+
+## Road Map
 The program should be running like a prompt which can accept predefined commands (ordered alphabetically, except for the first two), e.g.
 
 - [x] **help**: list all available commands and their short descriptions.
