@@ -11,14 +11,15 @@ import sys
 
 import numpy as np
 from numpy.linalg import norm
-from statsmodels.tsa.api import ExponentialSmoothing, SimpleExpSmoothing, Holt
+from statsmodels.tsa.api import SimpleExpSmoothing
 import matplotlib.pyplot as plt
 import bisect
 
 import utils
 import constants
 
-debug = True
+debug = True  # If True, some useful information will be printed out.
+show_figure = False
 
 
 def print_floats(*floats, precision=4, description=None, delimeter=','):
@@ -95,13 +96,14 @@ def valid_gps_file(gps_file):
 
 def calculate_angle(v1, v2):
     """
-    Calculate the angle ([0, Pi]) between two vectors
+    Calculate the angle ([0, Pi]) between two vectors according to:
 
     p = u * v = |u||v|cos(a)
 
     Parameters
     ----------
     v1 : arr
+
     v2 : arr
 
     Returns
@@ -190,7 +192,7 @@ def get_j(trip, acc, gravity_component, require_obd=False):
     new_time_speed = np.array(new_time_speed)
     time_speed = new_time_speed
 
-    if debug:
+    if show_figure:
         speed = [float(s) for s in time_speed[:, 1]]
         plt.plot(speed, '-*')
 
@@ -200,7 +202,7 @@ def get_j(trip, acc, gravity_component, require_obd=False):
     accelerating_periods = []
     longest_acc = 0
     longest_acc_period = []  # the line number of the start and end of the longest acc period
-    min_accelerate_threshold = 2  # TODO: adjust the value. Setting too small could yield too many candidates.
+    min_accelerate_threshold = 3  # TODO: adjust the value. Setting too small could yield too many candidates.
     while start + 1 < len(time_speed):
         while start + 1 < len(time_speed) and time_speed[start][1] >= time_speed[start + 1][1]:
             start += 1
@@ -214,7 +216,7 @@ def get_j(trip, acc, gravity_component, require_obd=False):
             peak -= 1
             count += 1
         if count >= min_accelerate_threshold:
-            if debug:
+            if show_figure:
                 plt.axvline(x=start, marker='x', color='g')
                 plt.axvline(x=peak, marker='o', color='r')
             accelerating_periods.append([peak, start])
@@ -346,11 +348,10 @@ def get_j(trip, acc, gravity_component, require_obd=False):
         print("sign and index:", end='')
         print(dominate_sign, dominate_index)
 
+    if show_figure:
         plt.draw()
         plt.show()
 
-    # TODO: get the driving straight periods.
-    # via gyroscope. Find the period with the smallest variance of gyroscope?
     # gyro_file = os.path.join(trip, constants.GYRO_FILE_NAME)
     # gyro = utils.read_csv_file(gyro_file, columns=[1, 3, 4, 5])
 
@@ -373,6 +374,9 @@ def remove_gravity_component(acc, gravity):
     -------
     The acc that has the gravity component removed.
     """
+    if debug:
+        print("Remove gravity component.")
+
     for line in acc:
         line[1:] -= gravity
     return acc
@@ -396,6 +400,7 @@ def get_gravity_component(trip):
     """
     if debug:
         print('get gravity component')
+
     # TODO: should we save the parameters to file?
     # so that we don't need to recalculate?
     # in the end, saving the full calibration parameter should be enough
@@ -424,7 +429,7 @@ def get_gravity_from_acc(acc):
         The gravity component in 3 axis
     """
     if debug:
-        print('get gravity component')
+        print('get gravity component...')
     gravity_component = [0.0] * 3
 
     # use low pass filter (exponential)
@@ -439,8 +444,7 @@ def get_gravity_from_acc(acc):
         gravity_component[i] = fcast_x[0]
 
     if debug:
-        print('gravity component: ', end='')
-        print(gravity_component)
+        print_floats(*gravity_component, description="Gravity component:")
 
     return gravity_component
 
@@ -470,7 +474,14 @@ def get_calibration_parameters(trip, require_obd, overwrite=False):
     overwrite : boolean, default=False
         If True, overwrite the existing calibration parameter file.
         If False and the calibration parameter file already exists, then read the parameters from file and return.
+
+    Returns
+    -------
+    calibration parameters : 1D array
+        [1*9], i.e. [Ix, Iy, Iz, Jx, Jy, Jz, Kx, Ky, Kz]
     """
+    if debug:
+        print("get calibration parameters for trip: %s" % trip)
     if not overwrite:
         calib_file = os.path.join(trip, constants.CALIBRATION_FILE_NAME)
         if os.path.isfile(calib_file):
@@ -529,21 +540,33 @@ def calibration(data_path: str, require_obd: bool, overwrite=False) -> None:
                 print('no acc')
             continue
 
-        get_calibration_parameters(_root, require_obd, overwrite)
+        calibration_parameters = get_calibration_parameters(_root, require_obd, overwrite)
+        if debug:
+            print_floats(*calibration_parameters, description="Calibration parameters:")
 
 
 def parse_arguments():
     """
-    TODO: doc
+    Parse the command line parameters.
+
+    Returns:
+    data_path : str
+        The path of data folder
+
+    require_obd : bool
+        If OBD file is needed during parameter calculation
+
+    overwrite : bool
+        If True, then recalculate and overwrite existing calibration parameter file.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--data_path', type=str,
                         help="The directory that contains the data")
     parser.add_argument('-obd', '--require_obd', default=False, action='store_true',
-                        help="If used, then trips without obd file will throw out error")
+                        help="If used, then trips without obd file will throw out error. Usually it is not needed to be set, unless very high accuratcy is required.")
     parser.add_argument('-ow', '--overwrite', default=False, action='store_true',
-                        help='If used, then overwrite the existing calibration parameter file.')
-    # TODO: add more
+                        help='If used, then overwrite the existing calibration parameter file. Leave it unsed to accelerate the program.')
+
     args = parser.parse_args()
 
     if args.data_path:
