@@ -2,6 +2,10 @@
 
 Implement coordinate alignment algorithm used in paper `Wang, Yan, et al. "Sensing vehicle dynamics for determining driver phone use." Proceeding of the 11th annual international conference on Mobile systems, applications, and services. ACM, 2013.`
 
+## Requirements
+- `Python 3.x`
+- Packages: `numpy`, `pandas`, `matplotlib`, `statsmodels`
+
 ## Road Map
 - [x] Derive **k**
   - [x] Retrieve the gravity acceleration applied to 3 axes one by one through [low pass filter](https://medium.com/datadriveninvestor/how-to-build-exponential-smoothing-models-using-python-simple-exponential-smoothing-holt-and-da371189e1a1)
