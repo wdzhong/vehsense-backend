@@ -87,3 +87,26 @@ def clean_directory(move_trash, subdir):
                         shutil.move(source + "/" + filename, dest_f2)
                     except:
                         return
+
+
+def deal_bad_trip(root, force_delete, temp_folder):
+    """
+    Deal with bad trip, either delete it or move it to temp_folder
+
+    root : dir
+        The path of the folder
+
+    force_delete : str, 'True' or 'False'
+        If 'True', then folder will be deleted directly.
+
+    temp_folder : str
+        The path of the temp folder to host the bad folder.
+    """
+    if force_delete.lower() == 'true':
+        shutil.rmtree(root)
+        return
+
+    # folder_name = os.path.basename(root)
+    if not os.path.isdir(temp_folder):
+        os.makedirs(temp_folder)
+    shutil.move(root, temp_folder)
