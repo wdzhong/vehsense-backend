@@ -1,6 +1,6 @@
 import os
 
-from utils import convert_to_map
+from helper import convert_to_map
 from clean import clean_file
 
 # Parent directory of VehSense data

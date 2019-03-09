@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from utils import convert_to_map
+from helper import convert_to_map
 
 # Parent directory of VehSense data
 parent_path = os.path.dirname(os.path.realpath(__file__))
