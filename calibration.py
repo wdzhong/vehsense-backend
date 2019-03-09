@@ -469,13 +469,18 @@ def get_calibration_parameters(trip, require_obd, overwrite=False):
 
     overwrite : boolean, default=False
         If True, overwrite the existing calibration parameter file.
+        If False and the calibration parameter file already exists, then read the parameters from file and return.
     """
     if not overwrite:
         calib_file = os.path.join(trip, constants.CALIBRATION_FILE_NAME)
         if os.path.isfile(calib_file):
             if debug:
                 print("%s already exists. And overwrite is set to be %s. Skip." % (calib_file, overwrite))
-            return
+            with open(calib_file, 'r') as fp:
+                line = fp.readline()
+            parameters = line.rstrip().split(',')
+            calibration_parameters = [float(p) for p in parameters]
+            return calibration_parameters
 
     acc_file = os.path.join(trip, constants.ACC_FILE_NAME)
     acc = utils.read_csv_file(acc_file, columns=[1, 3, 4, 5])  # get numpy array
