@@ -18,8 +18,11 @@ def clean_file(input_string):
     Args:
         input_string (str array): options for clean command, along with the "clean" option.
     """
-    if(input_string == "syntax"):
-        print("clean [-acc] min_size_of_acc [-gps] min_size_of_gps [-gyro] min_size_of_gyro [-obd] min_size_of_obd [-grav] min_size_of_grav [-mag] min_size_of_mag [-rot] min_size_of_rot [--all] min_size_of_file [-f]")
+    if input_string == "syntax":
+        msg = """clean [-acc min_size_of_acc] [-gps min_size_of_gps] [-gyro min_size_of_gyro]
+            [-obd min_size_of_obd] [-grav min_size_of_grav] [-mag min_size_of_mag]
+            [-rot min_size_of_rot] [--all min_size_of_file] [-f]"""
+        print(msg)
     else:
         input_map = convert_to_map(input_string)
         if '-f' in input_map:
@@ -30,6 +33,7 @@ def clean_file(input_string):
         acc_validation = input_map.get('--acc', "True")
         gyro_validation = input_map.get('--gyro', "True")
         obd_validation = input_map.get('--obd', "False")
+        gps_validation = input_map.get('', "False")
         clean_all(move_trash, acc_validation, gyro_validation, obd_validation, data_path_new)
 
 
@@ -43,23 +47,22 @@ def clean_all(move_trash, acc_validation, gyro_validation, obd_validation, data_
     """
     for root, subdirs, files in os.walk(data_path_new):
         for subdir in subdirs:
-            clean_all(move_trash, acc_validation, gyro_validation,
-                      obd_validation, os.path.join(data_path_new, subdir))
-        if(len(files) == 0):
+            clean_all(move_trash, acc_validation, gyro_validation, obd_validation, os.path.join(data_path_new, subdir))
+        if len(files) == 0:
             return
         raw_acc = os.path.join(root, "raw_acc.txt")
         raw_obd = os.path.join(root, "raw_obd.txt")
         raw_gyro = os.path.join(root, "raw_gyro.txt")
         if acc_validation == "True":
-            if(not os.path.exists(raw_acc)):
+            if not os.path.exists(raw_acc):
                 clean_directory(move_trash, root)
                 continue
         if obd_validation == "True":
-            if(not os.path.exists(raw_obd)):
+            if not os.path.exists(raw_obd):
                 clean_directory(move_trash, root)
                 continue
         if gyro_validation == "True":
-            if(not os.path.exists(raw_gyro)):
+            if not os.path.exists(raw_gyro):
                 clean_directory(move_trash, root)
 
 
@@ -81,6 +84,6 @@ def clean_directory(move_trash, subdir):
                     if not os.path.exists(dest_f2):
                         os.makedirs(dest_f2)
                     try:
-                        shutil.move(source+"/"+filename, dest_f2)
+                        shutil.move(source + "/" + filename, dest_f2)
                     except:
                         return
