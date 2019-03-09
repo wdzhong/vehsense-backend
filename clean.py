@@ -2,91 +2,102 @@ import os
 import shutil
 
 from helper import convert_to_map
+import constants
+from utils import read_csv_file
 
-# Parent directory of VehSense data
-parent_path = os.path.dirname(os.path.realpath(__file__))
-# VehSense data directory
-data_path = os.path.join(parent_path, "vehsense-backend-data")
-# temporary folder for storing the data after clean if -f is specified
-temp_path = os.path.join(parent_path, "vehsense-backend-data-temp")
+debug = True
 
 
-def clean_file(input_string):
+def clean_file(input_string, configs=None):
     """
-    Performs the operations for the clean command, i.e, moves the files to a temporary folder or moves them to trash depending on the minimum size specified.
+    Performs the operations for the clean command, i.e, moves the files to a temporary folder
+    or moves them to trash depending on the given and/or default criteria.
 
-    Args:
-        input_string (str array): options for clean command, along with the "clean" option.
+    Parameters:
+    input_string : str
+        options for clean command.
     """
     if input_string == "syntax":
-        msg = """clean [-acc min_size_of_acc] [-gps min_size_of_gps] [-gyro min_size_of_gyro]
-            [-obd min_size_of_obd] [-grav min_size_of_grav] [-mag min_size_of_mag]
-            [-rot min_size_of_rot] [--all min_size_of_file] [-f]"""
+        msg = """clean -d directory [-acc=True] [-gps interval=5] [-gyro=True]
+            [-obd=False] [-f=False] [-temp path] [-len duration=10]
+
+            -f : True, then delete bad folder directly.
+            """
         print(msg)
     else:
-        input_map = convert_to_map(input_string)
-        if '-f' in input_map:
-            move_trash = True
-        else:
-            move_trash = False
-        data_path_new = input_map.get('-d', data_path)
-        acc_validation = input_map.get('--acc', "True")
-        gyro_validation = input_map.get('--gyro', "True")
-        obd_validation = input_map.get('--obd', "False")
-        gps_validation = input_map.get('', "False")
-        clean_all(move_trash, acc_validation, gyro_validation, obd_validation, data_path_new)
+        options = convert_to_map(input_string)
+
+        force_delete = options.get('-f', "False")
+        top_folder = options.get('-d', None)
+
+        if not top_folder and configs:
+            top_folder = configs['data_path']
+
+        if not top_folder:
+            print("top folder is required")
+            return
+
+        temp_folder = options.get('-temp', os.path.join(top_folder, 'temp'))
+        acc_need_valid = options.get('-acc', "True")
+        gyro_need_valid = options.get('-gyro', "True")
+        obd_need_valid = options.get('-obd', "False")
+        gps_max_interval = int(options.get('-gps', 5))
+        min_duration = int(options.get('-len', 10))
+
+        if debug:
+            print('force_detele, top folder, acc needed, gyro needed, obd needed, gps interval, temp folder, min duration')
+            print(force_delete, top_folder, acc_need_valid, gyro_need_valid, obd_need_valid, gps_max_interval, temp_folder, min_duration)
+        clean_all(force_delete, acc_need_valid, gyro_need_valid, obd_need_valid, top_folder, gps_max_interval, temp_folder, min_duration)
 
 
-def clean_all(move_trash, acc_validation, gyro_validation, obd_validation, data_path_new):
+def clean_all(force_delete, acc_need_valid, gyro_need_valid, obd_need_valid, top_folder, gps_max_interval, temp_folder, min_duration):
     """
     Performs the clean operations of the individual files, invoked from within the clean_file method.
 
-    Args:
-        move_trash (bool): true if the files need to move to trash.
-        size (int): the threshold size of files in bytes.
+    Parameters
+    ----------
+    force_delete: str, 'True' or 'False'
+        If 'True', then bad files will be deleted.
+
+    acc_need_valid : str, 'True', or 'False'
+
+    gyro_need_valid : str, 'True' or 'False'
+
+    obd_need_valid : str, 'True' or 'False'
+
+    top_folder : str
+
+    gps_max_interval : int
+
+    temp_folder : str
+
+    min_duration: int
+
     """
-    for root, subdirs, files in os.walk(data_path_new):
-        for subdir in subdirs:
-            clean_all(move_trash, acc_validation, gyro_validation, obd_validation, os.path.join(data_path_new, subdir))
-        if len(files) == 0:
-            return
-        raw_acc = os.path.join(root, "raw_acc.txt")
-        raw_obd = os.path.join(root, "raw_obd.txt")
-        raw_gyro = os.path.join(root, "raw_gyro.txt")
-        if acc_validation == "True":
-            if not os.path.exists(raw_acc):
-                clean_directory(move_trash, root)
-                continue
-        if obd_validation == "True":
-            if not os.path.exists(raw_obd):
-                clean_directory(move_trash, root)
-                continue
-        if gyro_validation == "True":
-            if not os.path.exists(raw_gyro):
-                clean_directory(move_trash, root)
+    for root, _, _ in os.walk(top_folder):
+        if root == top_folder:
+            continue
+
+        if root.startswith(temp_folder):
+            continue
+
+        clean_single_folder(root, force_delete, acc_need_valid, gyro_need_valid, obd_need_valid, gps_max_interval, temp_folder, min_duration)
 
 
-def clean_directory(move_trash, subdir):
-    with open(os.path.join(parent_path, "cleaned_files.txt"), "a+") as my_file:
-        my_file.write(os.path.realpath(subdir) + "\n")
-        source = subdir
-        for root, subdirs, files in os.walk(subdir):
-            for filename in files:
-                raw_file = os.path.join(subdir, filename)
-                if (move_trash == True):
-                    os.remove(raw_file)
-                else:
-                    print("Moving file ", raw_file)
-                    dest1 = os.path.basename(subdir)
-                    dest2 = os.path.basename(os.path.dirname(subdir))
-                    dest_f1 = os.path.join(temp_path, dest2)
-                    dest_f2 = os.path.join(dest_f1, dest1)
-                    if not os.path.exists(dest_f2):
-                        os.makedirs(dest_f2)
-                    try:
-                        shutil.move(source + "/" + filename, dest_f2)
-                    except:
-                        return
+def clean_single_folder(root, force_delete, acc_need_valid, gyro_need_valid, obd_need_valid, gps_max_interval, temp_folder, min_duration):
+    """
+    Valid the given folder as request
+    """
+    files = [f for f in os.listdir(root) if os.path.isfile(os.path.join(root, f)) and f != '.DS_Store']
+    if not files:
+        return
+
+    if (acc_need_valid.lower() == 'true' and not valid_acc(root)) or\
+        (gyro_need_valid.lower() == 'true' and not valid_gyro(root)) or\
+            (obd_need_valid.lower() == 'true' and not valid_obd(root)) or\
+                (not valid_gps(root, gps_max_interval, min_duration)):
+        deal_bad_trip(root, force_delete, temp_folder)
+
 
 def valid_acc(root):
     """
