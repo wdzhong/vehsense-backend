@@ -21,6 +21,17 @@ import constants
 debug = True
 
 
+def print_floats(*floats, precision=4, description=None, delimeter=','):
+    """
+    Print a list of float in the format of specified precision.
+    """
+    if description:
+        print(description)
+    for num in floats[:-1]:
+        print('%.*f' % (precision, num), end=delimeter)
+    print('%.*f' % (precision, floats[-1]))
+
+
 def valid_obd_file(obd_file):
     """
     Check if the content of the given OBD file is valid, i.e. header,
