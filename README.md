@@ -14,7 +14,7 @@ The program should be running like a prompt which can accept predefined commands
 - [x] **help**: list all available commands and their short descriptions.
 - [x] **[cmd]** or **help [cmd]**: show details of `cmd` usage
 - [ ] **backup [-d directory]**: backup data. Ask for backup location if -d is not specified, and save it for future use.
-- [ ] **clean -d directory \[--acc=True] \[--gps interval=5] \[--gyro=True] \[--obd=False] [-f=False] [-temp path] [-len duration=10]**: move 'bad' trip (based on the input creteria) to a temporary location for manually inspection before moving to trash. Keep the original file path (the last 3 or 4 layers of ancestral), rather than just the folder name so that we can put them back if necessary. Usage example: `clean --gps 4 -f`
+- [x] **clean -d directory \[--acc=True] \[--gps interval=5] \[--gyro=True] \[--obd=False] [-f=False] [-temp path] [-len duration=10]**: move 'bad' trip (based on the input creteria) to a temporary location for manually inspection before moving to trash. Keep the original file path (the last 3 or 4 layers of ancestral), rather than just the folder name so that we can put them back if necessary. Usage example: `clean --gps 4 -f`
   - `-d directory`: The directory to start with.
   - `--acc=True`: The default value is `True`, which means that acc file needs to exist.
   - `--gps interval=5`: GPS file **must** be there, and its average sampling interval should **NOT** exceed the specified threshold, who unit is `second`. Default is `5 seconds per point`.
