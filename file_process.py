@@ -414,7 +414,7 @@ def sub_dir_path(d):
         d : directory of data
 
     Returns:
-        List of sub-directories in the given directory.   
+        List of sub-directories in the given directory.
     """
     return filter(os.path.isdir, [os.path.join(d, f) for f in os.listdir(d)])
 
@@ -423,9 +423,13 @@ def process_data_main(preprocess_path, frequency):
     """
     Parses the directory in the provided path and processes the individual sub-directories.
 
-    Args:                
-        path: path of data folder to process
+    Parameters
+    -----------
+    preprocess_path : str
+        path of data folder to process
 
+    frequency : int
+        resampling frequency
     """
     sampling_rate = str(1000.0 / frequency)
     sampling_rate = sampling_rate + 'L'
@@ -442,4 +446,8 @@ def process_data_main(preprocess_path, frequency):
                 preprocessed_file.write(subdir_datewise + "\n")
 
 
-#process_data_main(path, sampling_rate)
+if __name__ == "__main__":
+    parent_path = os.path.dirname(os.path.realpath(__file__))
+    path = os.path.join(parent_path, "vehsense-backend-data")
+    sampling_rate = 200
+    process_data_main(path, sampling_rate)

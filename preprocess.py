@@ -2,32 +2,47 @@ import os
 
 from helper import convert_to_map
 from clean import clean_file
+import file_process
 
-# Parent directory of VehSense data
-parent_path = os.path.dirname(os.path.realpath(__file__))
-# VehSense data directory
-data_path = os.path.join(parent_path, "vehsense-backend-data")
 
-def preprocess(input_string):
+debug = True
+
+
+def preprocess(input_string, configs=None):
     """
     Performs the operations for the preprocess command, i.e, cleans the files in the specified directory and executes the preprocess functionality.
 
-    Args:
-        input_string (str array): options for preprocess command which are directory and frequency.
+    Paremeters:
+    -----------
+    input_string (str array): options for preprocess command which are directory and frequency.
     """
-    if(input_string == "syntax"):
-        print("preprocess [-d directory] [-f frequency=200]")
+    if input_string == "syntax":
+        msg = """preprocess [-d directory] [-f frequency=200] [-c clean=False]
+
+    -d : The data path.
+    -f : The interpolation rate. Default is 200 Hz.
+    -c : True then call 'clean()' function first. Default is 'False'.
+        """
+        print(msg)
     else:
         input_map = convert_to_map(input_string)
-        frequency = float(input_map.get('-f', 5))
-        preprocess_path = input_map.get('-d', data_path)
-        input_string = "clean -d " + preprocess_path + " --all 170"
-        clean_file(input_string.split(" "))
-        print(frequency)
-        print(preprocess_path)
-        if(len(input_map) % 2 == 1):
-            pass
-            #print("Invalid arguments for preprocess")
-            # return
-        import file_process
-        file_process.process_data_main(preprocess_path, frequency)
+        frequency = float(input_map.get('-f', 200))
+        data_path = input_map.get('-d', None)
+
+        if not data_path and configs:
+            data_path = configs['data_path']
+
+        if not data_path:
+            print("ERROR: preprocess(): data path is not set")
+            return
+
+        clean_flag = input_map.get('-c', "false")
+        if clean_flag.lower() == 'true':
+            clean_options = ["-d", data_path]
+            clean_file(clean_options)
+
+        if debug:
+            print("interpolation rate %f Hz" % frequency)
+            print("data path: %s" % data_path)
+
+        file_process.process_data_main(data_path, frequency)

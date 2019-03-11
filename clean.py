@@ -14,14 +14,17 @@ def clean_file(input_string, configs=None):
     or moves them to trash depending on the given and/or default criteria.
 
     Parameters:
-    input_string : str
+    input_string : str, or list of str
         options for clean command.
     """
     if input_string == "syntax":
         msg = """clean -d directory [-acc=True] [-gps interval=5] [-gyro=True]
             [-obd=False] [-f=False] [-temp path] [-len duration=10]
 
-            -f : True, then delete bad folder directly.
+        -f force_delete=False: If True, then delete bad folder directly. Otherwise, move to temp folder. Default is False.
+        -gps interval=5: The maximum average sampling interval of a good GPS.
+        -len min_duration=10: 
+        -temp path: The
             """
         print(msg)
     else:
