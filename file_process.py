@@ -76,8 +76,6 @@ def process_data(path, sampling_rate, rolling_window_size):
     -------
     True if process succeeds; False, otherwise.
     """
-    ref_file = os.path.join(path, "raw_obd.txt")
-    ref_df = pd.read_csv(ref_file)
 
     # get the shared start time and end time
     start_time, end_time = get_start_end_time(path)
@@ -92,17 +90,17 @@ def process_data(path, sampling_rate, rolling_window_size):
     gps_file = os.path.join(path, constants.GPS_FILE_NAME)
     if os.path.isfile(gps_file):
         df = pd.read_csv(gps_file, error_bad_lines=False, engine='python', skipfooter=1)
-        process_gps(df, ref_df, path, start_time, end_time, sampling_rate, rolling_window_size)
+        process_gps(df, path, start_time, end_time, sampling_rate, rolling_window_size)
 
     obd_file = os.path.join(path, constants.OBD_FILE_NAME)
     if os.path.isfile(obd_file):  # TODO: more check
         df = pd.read_csv(obd_file, error_bad_lines=False, engine='python', skipfooter=1)
-        process_obd(df, ref_df, path, start_time, end_time, sampling_rate, rolling_window_size)
+        process_obd(df, path, start_time, end_time, sampling_rate, rolling_window_size)
 
     return True
 
 
-def process_motion_sensor_data(sensor_file: str, ref_df, path, start_time, end_time, sampling_rate, rolling_window_size, sensor):
+def process_motion_sensor_data(sensor_file: str, path, start_time, end_time, sampling_rate, rolling_window_size, sensor):
     """
     Process a single motion sensor data file, and create two new files, i.e.
         '[sensor_name]_resampled.txt' and '[sensor_name]_smoothed.txt'
@@ -111,9 +109,6 @@ def process_motion_sensor_data(sensor_file: str, ref_df, path, start_time, end_t
     ----------
     sensor_file : str
         The name of sensor file
-
-    ref_df : DataFrame obj
-        The DataFrame of the reference data
 
     path : str
         The folder/dictionary of the data exists
@@ -159,14 +154,14 @@ def process_motion_sensor_data(sensor_file: str, ref_df, path, start_time, end_t
     smoothed_file = os.path.join(path, sensor + "_smoothed.txt")
     df_smoothed = df.dropna()
     df_smoothed = df_smoothed.dropna()
-    df_smoothed = df.merge(ref_df, how='left')
+    # df_smoothed = df.merge(ref_df, how='left')
     df_smoothed = df.interpolate(method='linear')
     df_smoothed = df.rolling(rolling_window_size, min_periods=1).mean()
     df_smoothed = df[["sys_time", "raw_x_" + sensor, "raw_y_" + sensor, "raw_z_" + sensor]]
     df_smoothed.to_csv(smoothed_file, index=False)
 
 
-def process_obd(obd_df, ref_df, path, start_time, end_time, sampling_rate, rolling_window_size):
+def process_obd(obd_df, path, start_time, end_time, sampling_rate, rolling_window_size):
     """
     Processes the 'raw_obd.txt' file and create two new files, i.e.
         'obd_resampled.txt' and 'obd_smoothed.txt'
@@ -175,9 +170,6 @@ def process_obd(obd_df, ref_df, path, start_time, end_time, sampling_rate, rolli
     ----------
     obd_df : DataFrame
         dataframe of raw_obd.txt file
-
-    ref_df : DataFrame obj
-        The DataFrame of the reference data
 
     path : str
         The folder/dictionary of the data exists
@@ -237,7 +229,7 @@ def process_obd(obd_df, ref_df, path, start_time, end_time, sampling_rate, rolli
     obd_df1.to_csv(smoothed_file, index=False)
 
 
-def process_gps(gps_df, ref_df, path, start_time, end_time, sampling_rate, rolling_window_size):
+def process_gps(gps_df, path, start_time, end_time, sampling_rate, rolling_window_size):
     """
     Processes the 'gps.txt' file and create two new files, i.e.
         'gps_resampled.txt' and 'gps_smoothed.txt'
@@ -246,9 +238,6 @@ def process_gps(gps_df, ref_df, path, start_time, end_time, sampling_rate, rolli
     ----------
     gps_df : DataFrame
         dataframe of gps.txt file
-
-    ref_df : DataFrame obj
-        The DataFrame of the reference data
 
     path : str
         The folder/dictionary of the data exists
@@ -288,7 +277,6 @@ def process_gps(gps_df, ref_df, path, start_time, end_time, sampling_rate, rolli
 
     smoothed_file = os.path.join(path, "gps_smoothed.txt")
     gps_df1 = gps_df1.dropna()
-    gps_df1 = gps_df1.merge(ref_df, how='left')
     gps_df1 = gps_df1.interpolate(method='linear')
     gps_df1 = gps_df1[["system_time", "lat", "lon", "speed", "bearing"]]
     gps_df1 = gps_df1.rolling(rolling_window_size, min_periods=1).mean()
