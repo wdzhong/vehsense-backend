@@ -59,11 +59,11 @@ def get_start_end_time(folder):
 
 def process_data(path, sampling_rate, rolling_window_size):
     """
-    Creates the individual paths of files and dataframes for the individual file methods to process.
+    Process files under given path accordingly.
 
     Parameters
     ----------
-    path: str,
+    path: str
         path of individual data folder to process
 
     sampling_rate : str
@@ -71,6 +71,7 @@ def process_data(path, sampling_rate, rolling_window_size):
 
     rolling_window_size : int
         Default is 50.
+
     Returns
     -------
     True if process succeeds; False, otherwise.
@@ -103,13 +104,35 @@ def process_data(path, sampling_rate, rolling_window_size):
 
 def process_motion_sensor_data(sensor_file: str, ref_df, path, start_time, end_time, sampling_rate, rolling_window_size, sensor):
     """
-    Process motion sensor data, and create two new files, i.e.
+    Process a single motion sensor data file, and create two new files, i.e.
         '[sensor_name]_resampled.txt' and '[sensor_name]_smoothed.txt'
 
     Parameters
     ----------
     sensor_file : str
-        The sensor file
+        The name of sensor file
+
+    ref_df : DataFrame obj
+        The DataFrame of the reference data
+
+    path : str
+        The folder/dictionary of the data exists
+
+    start_time : int
+        Any data with timestamps smaller than start time will NOT be used
+
+    end_time : int
+        And data with timestamps larger than end time will NOT be used
+
+    sampling_rate : str
+        The resampling rate to be used for interpolation
+
+    rolling_window_size : int
+        The sliding window size in data smoothing
+
+    sensor : str
+        The name of the sensor to be delt with, i.e. ['acc', 'gyro', 'rot', 'mag', 'grav'],
+        that have been used in the filename and the column name.
     """
     df = pd.read_csv(sensor_file, error_bad_lines=False, engine='python', skipfooter=1)
     resampled_file = os.path.join(path, sensor + "_resampled.txt")
@@ -143,19 +166,33 @@ def process_motion_sensor_data(sensor_file: str, ref_df, path, start_time, end_t
 
 def process_obd(obd_DF, ref_DF, path, start_time, end_time, sampling_rate, rolling_window_size):
     """
-    Processes the 'raw_obd.txt' file and creates a new file 'obd_new.txt' with processed data 
+    Processes the 'raw_obd.txt' file and create two new files, i.e.
+        'obd_resampled.txt' and 'obd_smoothed.txt'
 
-    Args:
-        obd_DF: dataframe of raw_obd.txt file
+    Parameters
+    ----------
+    obd_DF : DataFrame
+        dataframe of raw_obd.txt file
 
-        path: path of data folder to process
+    ref_DF : DataFrame obj
+        The DataFrame of the reference data
 
-        start_time: start time from reference file
+    path : str
+        The folder/dictionary of the data exists
 
-        end_time: end time from reference file
+    start_time : int
+        Any data with timestamps smaller than start time will NOT be used
+
+    end_time : int
+        And data with timestamps larger than end time will NOT be used
+
+    sampling_rate : str
+        The resampling rate to be used for interpolation
+
+    rolling_window_size : int
+        The sliding window size in data smoothing
     """
-    raw_obd_1 = os.path.join(path, "obd_resampled.txt")
-    raw_obd_2 = os.path.join(path, "obd_smoothed.txt")
+    resampled_file = os.path.join(path, "obd_resampled.txt")
     obd_DF['timestamp'] = obd_DF['timestamp'] - start_time
     obd_DF['timestamp'] = pd.to_datetime(obd_DF['timestamp'], unit='ms')
     #obd_DF['timestamp'] = obd_DF['timestamp'].astype(np.int64)
@@ -166,11 +203,11 @@ def process_obd(obd_DF, ref_DF, path, start_time, end_time, sampling_rate, rolli
     obd_DF = obd_DF.resample(sampling_rate, on='sys_time').mean()
     obd_DF = obd_DF.dropna()
     # TODO: include quote in fields for to_csv
-    obd_DF.to_csv(raw_obd_1)
-    obd_DF1 = pd.read_csv(raw_obd_1)
+    obd_DF.to_csv(resampled_file)
+    obd_DF1 = pd.read_csv(resampled_file)
     obd_DF['RPM'] = obd_DF['RPM'].astype('str') + 'RPM'
     obd_DF['Speed'] = obd_DF['Speed'].astype('str') + 'km/h'
-    obd_DF.to_csv(raw_obd_1)
+    obd_DF.to_csv(resampled_file)
     pattern = '%Y-%m-%d %H:%M:%S.%f'
     for i in obd_DF1.index.tolist():
         a = datetime.strptime(obd_DF1.loc[i, 'sys_time'], pattern)
@@ -178,7 +215,9 @@ def process_obd(obd_DF, ref_DF, path, start_time, end_time, sampling_rate, rolli
         x = obd_DF1.at[i, 'sys_time']
         obd_DF1.at[i, 'sys_time'] = a + \
             (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
-    obd_DF1.to_csv(raw_obd_1, index=False)
+    obd_DF1.to_csv(resampled_file, index=False)
+
+    smoothed_file = os.path.join(path, "obd_smoothed.txt")
     obd_DF1 = obd_DF1.dropna()
     obd_DF1 = obd_DF1.interpolate(method='linear')
     obd_DF1 = obd_DF1.rolling(rolling_window_size, min_periods=1).mean()
@@ -190,27 +229,39 @@ def process_obd(obd_DF, ref_DF, path, start_time, end_time, sampling_rate, rolli
             obd_DF1.at[i, 'sys_time'] = int(x / 100) * 100
     obd_DF1 = obd_DF1.rename(index=str, columns={"sys_time": "timestamp"})
     obd_DF1 = obd_DF1.drop_duplicates(subset=['timestamp'], keep=False)
-    obd_DF1.to_csv(raw_obd_2, index=False)
+    obd_DF1.to_csv(smoothed_file, index=False)
 
 
 def process_gps(gps_DF, ref_DF, path, start_time, end_time, sampling_rate, rolling_window_size):
     """
-    Processes the 'gps.txt' file and creates a new file 'gps_new.txt' with processed data 
+    Processes the 'gps.txt' file and create two new files, i.e.
+        'gps_resampled.txt' and 'gps_smoothed.txt'
 
-    Args:
-        gps_DF: dataframe of gps.txt file
+    Parameters
+    ----------
+    gps_DF : DataFrame
+        dataframe of gps.txt file
 
-        ref_DF: dataframe of reference file
+    ref_DF : DataFrame obj
+        The DataFrame of the reference data
 
-        path: path of data folder to process
+    path : str
+        The folder/dictionary of the data exists
 
-        start_time: start time from reference file
+    start_time : int
+        Any data with timestamps smaller than start time will NOT be used
 
-        end_time: end time from reference file   
+    end_time : int
+        And data with timestamps larger than end time will NOT be used
+
+    sampling_rate : str
+        The resampling rate to be used for interpolation
+
+    rolling_window_size : int
+        The sliding window size in data smoothing
     """
     # Add provider column in processed file
-    raw_gps_1 = os.path.join(path, "gps_resampled.txt")
-    raw_gps_2 = os.path.join(path, "gps_smoothed.txt")
+    resampled_file = os.path.join(path, "gps_resampled.txt")
     gps_DF['system_time'] = gps_DF['system_time'].astype('int64')
    # print(gps_DF['system_time'].dtype)
     gps_DF = gps_DF.loc[(gps_DF['system_time'] >= start_time)
@@ -219,32 +270,37 @@ def process_gps(gps_DF, ref_DF, path, start_time, end_time, sampling_rate, rolli
     gps_DF['system_time'] = pd.to_datetime(gps_DF['system_time'], unit='ms')
     gps_DF = gps_DF.resample(sampling_rate, on='system_time').mean()
     pattern = '%Y-%m-%d %H:%M:%S.%f'
-    gps_DF.to_csv(raw_gps_1)
-    gps_DF1 = pd.read_csv(raw_gps_1)
+    gps_DF.to_csv(resampled_file)
+    gps_DF1 = pd.read_csv(resampled_file)
     for i in gps_DF1.index.tolist():
         a = datetime.strptime(gps_DF1.loc[i, 'system_time'], pattern)
         a = int(a.microsecond / 1000)
         x = gps_DF1.at[i, 'system_time']
         gps_DF1.at[i, 'system_time'] = a + \
             (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
-    gps_DF1.to_csv(raw_gps_1, index=False)
+    gps_DF1.to_csv(resampled_file, index=False)
+
+    smoothed_file = os.path.join(path, "gps_smoothed.txt")
     gps_DF1 = gps_DF1.dropna()
     gps_DF1 = gps_DF1.merge(ref_DF, how='left')
     gps_DF1 = gps_DF1.interpolate(method='linear')
     gps_DF1 = gps_DF1[["system_time", "lat", "lon", "speed", "bearing"]]
     gps_DF1 = gps_DF1.rolling(rolling_window_size, min_periods=1).mean()
-    gps_DF1.to_csv(raw_gps_2, index=False)
+    gps_DF1.to_csv(smoothed_file, index=False)
 
 
 def sub_dir_path(d):
     """
-    Filters directories from the argument directory and returns the list of sub-directory folders.
+    Return the list of sub-directory folders of the given folder.
 
-    Args:
-        d : directory of data
+    Parameters
+    ----------
+    d : str
+        The directory of data
 
-    Returns:
-        List of sub-directories in the given directory.
+    Returns
+    -------
+    List of sub-directories in the given directory.
     """
     return filter(os.path.isdir, [os.path.join(d, f) for f in os.listdir(d)])
 
