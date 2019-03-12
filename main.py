@@ -22,14 +22,14 @@ from new_cmd import new_cmd
 
 debug = True
 
-vehSenseCommands = {"clean": "move 'bad' trip (based on the input criteria) to a temporary location for manual inspection or delete immediately as requst."}
-vehSenseCommands["help cmd"] = "displays the syntax and description for the command."
-vehSenseCommands["size"] = "display overall size, and size for each user"
-vehSenseCommands["new"] = "show newly added data since last time running this command or specified time point"
-vehSenseCommands["backup"] = "backup data. Ask for backup location if [-d] is not specified, and save it for future use."
-vehSenseCommands["exit"] = "exits VehSense backend."
-vehSenseCommands["unzip"] = "decompress the specified file, or compressed files under specified directory."
-vehSenseCommands["preprocess"] = "preprocess the files in the specified directory."
+commands_dict = {"clean": "move 'bad' trip (based on the input criteria) to a temporary location for manual inspection or delete immediately as requst."}
+commands_dict["help cmd"] = "displays the syntax and description for the command."
+commands_dict["size"] = "display overall size, and size for each user"
+commands_dict["new"] = "show newly added data since last time running this command or specified time point"
+commands_dict["backup"] = "backup data. Ask for backup location if [-d] is not specified, and save it for future use."
+commands_dict["exit"] = "exits VehSense backend."
+commands_dict["unzip"] = "decompress the specified file, or compressed files under specified directory."
+commands_dict["preprocess"] = "preprocess the files in the specified directory."
 
 cmd_list = {"clean": clean_file, "size": size_cmd, "new": new_cmd,
             "backup": backup, "unzip": decompress_file, "preprocess": preprocess}
@@ -49,7 +49,7 @@ def helper():
         preferredWidth = 100
         wrapper = textwrap.TextWrapper(initial_indent=prefix,
                                     width=preferredWidth, subsequent_indent=' '*(len(longest_cmd)+2))
-        print("{:<10} {:<15}".format(command, wrapper.fill(vehSenseCommands[command])))
+        print("{:<10} {:<15}".format(command, wrapper.fill(commands_dict[command])))
 
 
 def cmd_help(cmd):
@@ -66,7 +66,7 @@ def cmd_help(cmd):
     if cmd not in cmd_list:
         print("Unrecognized command. Enter \"help [cmd]\" for function syntax, \"help\" for list of available commands")
     else:
-        print("Description:", vehSenseCommands[cmd], "\n")
+        print("Description:", commands_dict[cmd], "\n")
         print("Usage:")
         cmd_list[cmd]("syntax")
 
@@ -114,15 +114,15 @@ def main(args):
         print(configs)
 
     while True:
-        inputString = input(">>").rstrip()
-        inputString = inputString.replace("=", " ")
-        inputString = inputString.split()
-        receivedCmd = inputString[0]
-        if receivedCmd == "help" and len(inputString) == 1:
+        input_string = input(">>").rstrip()
+        input_string = input_string.replace("=", " ")
+        input_segments = input_string.split()
+        received_cmd = input_segments[0]
+        if received_cmd == "help" and len(input_segments) == 1:
             helper()
-        elif receivedCmd == "help" and len(inputString) == 2:
-            cmd_help(inputString[1])
-        elif receivedCmd == "exit":
+        elif received_cmd == "help" and len(input_segments) == 2:
+            cmd_help(input_segments[1])
+        elif received_cmd == "exit":
             print("Exiting VehSense backend.")
             resume = False
             while True:
@@ -145,23 +145,23 @@ def main(args):
             if not resume:
                 sys.exit()
 
-        elif receivedCmd in cmd_list:
-            if len(inputString) == 1:
-                cmd_help(inputString[0])
-            else:
-                cmd_list[receivedCmd](inputString[1:], configs)
-        elif receivedCmd == 'cd':
+        elif received_cmd == 'cd':
             # TODO: do we need to reload config? DO NOT use this command for now
-            if len(inputString) == 2:
-                if os.path.isdir(inputString[1]):
+            if len(input_segments) == 2:
+                if os.path.isdir(input_segments[1]):
                     configs = load_config(data_path)
-                    configs['data_path'] = inputString[1]
+                    configs['data_path'] = input_segments[1]
                 else:
                     print("given folder does not exist.")
             else:
                 print("missing args")
-        elif receivedCmd == 'dir':
-            print(configs['data_path'])
+        elif received_cmd == 'dir':
+            print("current data path: %s" % configs['data_path'])
+        elif received_cmd in cmd_list:
+            if len(input_segments) == 1:
+                cmd_help(input_segments[0])
+            else:
+                cmd_list[received_cmd](input_segments[1:], configs)
         else:
             print("Unrecognized command. Enter \"help [cmd]\" for function syntax, \"help\" for list of available commands")
 
