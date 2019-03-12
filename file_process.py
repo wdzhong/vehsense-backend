@@ -5,16 +5,11 @@ from datetime import datetime
 import numpy as np
 import time
 import calendar
+import sys
 
 import constants
 
 debug = True
-
-global sampling_rate
-sampling_rate = '5L'
-ref_file = "raw_obd.txt"
-rolling_window_size = 100
-
 
 def get_start_end_time(folder):
     """
@@ -146,6 +141,7 @@ def process_motion_sensor_data(sensor_file: str, ref_df, path, start_time, end_t
     df_smoothed.to_csv(smoothed_file, index=False)
 
 
+def process_obd(obd_DF, ref_DF, path, start_time, end_time, sampling_rate, rolling_window_size):
     """
     Processes the 'raw_obd.txt' file and creates a new file 'obd_new.txt' with processed data 
 
@@ -197,7 +193,7 @@ def process_motion_sensor_data(sensor_file: str, ref_df, path, start_time, end_t
     obd_DF1.to_csv(raw_obd_2, index=False)
 
 
-def process_gps(gps_DF, ref_DF, path, start_time, end_time):
+def process_gps(gps_DF, ref_DF, path, start_time, end_time, sampling_rate, rolling_window_size):
     """
     Processes the 'gps.txt' file and creates a new file 'gps_new.txt' with processed data 
 
@@ -253,7 +249,7 @@ def sub_dir_path(d):
     return filter(os.path.isdir, [os.path.join(d, f) for f in os.listdir(d)])
 
 
-def process_data_main(data_path, frequency):
+def process_data_main(data_path, frequency, rolling_window_size=100):
     """
     Parses the directory in the provided path and processes the individual sub-directories.
 
@@ -282,11 +278,11 @@ def process_data_main(data_path, frequency):
 
         # TODO: check if the folder has been preprocessed before or not
 
-        process_data(root)
+        process_data(root, sampling_rate, rolling_window_size)
 
 
 if __name__ == "__main__":
-    parent_path = os.path.dirname(os.path.realpath(__file__))
-    path = os.path.join(parent_path, "vehsense-backend-data")
+    root = os.path.dirname(os.path.realpath(__file__))
+    path = os.path.join(root, "vehsense-backend-data")
     sampling_rate = 200
     process_data_main(path, sampling_rate)
