@@ -136,22 +136,23 @@ def process_motion_sensor_data(sensor_file: str, ref_df, path, start_time, end_t
     """
     df = pd.read_csv(sensor_file, error_bad_lines=False, engine='python', skipfooter=1)
     resampled_file = os.path.join(path, sensor + "_resampled.txt")
-    df['sys_time'] = df['sys_time'].astype('int64')
-    df = df.loc[(df['sys_time'] >= start_time)
-                        & (df['sys_time'] <= end_time)]
-    df['sys_time'] = df['sys_time'] - start_time
-    df['sys_time'] = pd.to_datetime(df['sys_time'], unit='ms')
-    df = df.resample(sampling_rate, on='sys_time').mean()
+    sys_time_header = 'sys_time'
+    df[sys_time_header] = df[sys_time_header].astype('int64')
+    df = df.loc[(df[sys_time_header] >= start_time)
+                        & (df[sys_time_header] <= end_time)]
+    df[sys_time_header] = df[sys_time_header] - start_time
+    df[sys_time_header] = pd.to_datetime(df[sys_time_header], unit='ms')
+    df = df.resample(sampling_rate, on=sys_time_header).mean()
     df.to_csv(resampled_file)
 
     df = pd.read_csv(resampled_file)
     df = df.dropna()
     pattern = '%Y-%m-%d %H:%M:%S.%f'
     for i in df.index.tolist():
-        a = datetime.strptime(df.loc[i, 'sys_time'], pattern)
+        a = datetime.strptime(df.loc[i, sys_time_header], pattern)
         a = int(a.microsecond/1000)
-        x = df.at[i, 'sys_time']
-        df.at[i, 'sys_time'] = a + \
+        x = df.at[i, sys_time_header]
+        df.at[i, sys_time_header] = a + \
             (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
     df.to_csv(resampled_file, index=False)
 
@@ -194,14 +195,16 @@ def process_obd(obd_df, ref_df, path, start_time, end_time, sampling_rate, rolli
         The sliding window size in data smoothing
     """
     resampled_file = os.path.join(path, "obd_resampled.txt")
-    obd_df['timestamp'] = obd_df['timestamp'] - start_time
-    obd_df['timestamp'] = pd.to_datetime(obd_df['timestamp'], unit='ms')
-    #obd_df['timestamp'] = obd_df['timestamp'].astype(np.int64)
+    timestamp_header = 'timestamp'
+    sys_time_header = 'sys_time'
+    obd_df[timestamp_header] = obd_df[timestamp_header] - start_time
+    obd_df[timestamp_header] = pd.to_datetime(obd_df[timestamp_header], unit='ms')
+    #obd_df[timestamp_header] = obd_df[timestamp_header].astype(np.int64)
     obd_df = obd_df.dropna(thresh=1, axis='columns')
     obd_df['RPM'] = obd_df['RPM'].str.strip("RPM").astype('int64')
     obd_df['Speed'] = obd_df['Speed'].str.strip("km/h").astype('int64')
-    obd_df = obd_df.rename(index=str, columns={"timestamp": "sys_time"})
-    obd_df = obd_df.resample(sampling_rate, on='sys_time').mean()
+    obd_df = obd_df.rename(index=str, columns={timestamp_header: sys_time_header})
+    obd_df = obd_df.resample(sampling_rate, on=sys_time_header).mean()
     obd_df = obd_df.dropna()
     # TODO: include quote in fields for to_csv
     obd_df.to_csv(resampled_file)
@@ -212,10 +215,10 @@ def process_obd(obd_df, ref_df, path, start_time, end_time, sampling_rate, rolli
     obd_df.to_csv(resampled_file)
     pattern = '%Y-%m-%d %H:%M:%S.%f'
     for i in obd_df1.index.tolist():
-        a = datetime.strptime(obd_df1.loc[i, 'sys_time'], pattern)
+        a = datetime.strptime(obd_df1.loc[i, sys_time_header], pattern)
         a = int(a.microsecond/1000)
-        x = obd_df1.at[i, 'sys_time']
-        obd_df1.at[i, 'sys_time'] = a + \
+        x = obd_df1.at[i, sys_time_header]
+        obd_df1.at[i, sys_time_header] = a + \
             (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
     obd_df1.to_csv(resampled_file, index=False)
 
@@ -224,13 +227,13 @@ def process_obd(obd_df, ref_df, path, start_time, end_time, sampling_rate, rolli
     obd_df1 = obd_df1.interpolate(method='linear')
     obd_df1 = obd_df1.rolling(rolling_window_size, min_periods=1).mean()
     for i in obd_df1.index.tolist():
-        x = obd_df1.at[i, 'sys_time']
+        x = obd_df1.at[i, sys_time_header]
         if (x % 100 >= 50):
-            obd_df1.at[i, 'sys_time'] = int(x / 100) * 100 + 100
+            obd_df1.at[i, sys_time_header] = int(x / 100) * 100 + 100
         else:
-            obd_df1.at[i, 'sys_time'] = int(x / 100) * 100
-    obd_df1 = obd_df1.rename(index=str, columns={"sys_time": "timestamp"})
-    obd_df1 = obd_df1.drop_duplicates(subset=['timestamp'], keep=False)
+            obd_df1.at[i, sys_time_header] = int(x / 100) * 100
+    obd_df1 = obd_df1.rename(index=str, columns={sys_time_header: timestamp_header})
+    obd_df1 = obd_df1.drop_duplicates(subset=[timestamp_header], keep=False)
     obd_df1.to_csv(smoothed_file, index=False)
 
 
@@ -262,24 +265,24 @@ def process_gps(gps_df, ref_df, path, start_time, end_time, sampling_rate, rolli
     rolling_window_size : int
         The sliding window size in data smoothing
     """
-    # Add provider column in processed file
+    # TODO: Add provider column in processed file
+    system_time_header = "system_time"
     resampled_file = os.path.join(path, "gps_resampled.txt")
-    gps_df['system_time'] = gps_df['system_time'].astype('int64')
-   # print(gps_df['system_time'].dtype)
-    gps_df = gps_df.loc[(gps_df['system_time'] >= start_time)
-                        & (gps_df['system_time'] <= end_time)]
-    gps_df['system_time'] = gps_df['system_time'] - start_time
-    gps_df['system_time'] = pd.to_datetime(gps_df['system_time'], unit='ms')
-    gps_df = gps_df.resample(sampling_rate, on='system_time').mean()
+    gps_df[system_time_header] = gps_df[system_time_header].astype('int64')
+    gps_df = gps_df.loc[(gps_df[system_time_header] >= start_time)
+                        & (gps_df[system_time_header] <= end_time)]
+    gps_df[system_time_header] = gps_df[system_time_header] - start_time
+    gps_df[system_time_header] = pd.to_datetime(gps_df[system_time_header], unit='ms')
+    gps_df = gps_df.resample(sampling_rate, on=system_time_header).mean()
     pattern = '%Y-%m-%d %H:%M:%S.%f'
     gps_df.to_csv(resampled_file)
 
     gps_df1 = pd.read_csv(resampled_file)
     for i in gps_df1.index.tolist():
-        a = datetime.strptime(gps_df1.loc[i, 'system_time'], pattern)
+        a = datetime.strptime(gps_df1.loc[i, system_time_header], pattern)
         a = int(a.microsecond / 1000)
-        x = gps_df1.at[i, 'system_time']
-        gps_df1.at[i, 'system_time'] = a + \
+        x = gps_df1.at[i, system_time_header]
+        gps_df1.at[i, system_time_header] = a + \
             (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
     gps_df1.to_csv(resampled_file, index=False)
 
