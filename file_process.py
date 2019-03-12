@@ -5,30 +5,55 @@ from datetime import datetime
 import numpy as np
 import time
 import calendar
-import mmap
-import re
+
+import constants
+
 
 global sampling_rate
-sampling_rate = '100L'
+sampling_rate = '5L'
 ref_file = "raw_obd.txt"
 rolling_window_size = 100
-global memory_map
-# Parent directory of VehSense data
-parent_path = os.path.dirname(os.path.realpath(__file__))
-# VehSense data directory
-path = os.path.join(parent_path, "vehsense-backend-data")
 
 
-def process_data(path):
+def get_start_end_time(folder):
+    """
+    Get the maximum start time and the minimum end time of all data under the given folder.
+
+    Parameters
+    ----------
+    folder : str
+        The path of the folder
+
+    Returns
+    -------
+    start_time : int
+        System timestamp. The maximum start time of all data files.
+
+    end_time : int
+        System timestamp. The minimum end time of all data files.
+    """
+    start = None
+    end = None
+
+    return start, end
+
+
+def process_data(path, frequency=200):
     """
     Creates the individual paths of files and dataframes for the individual file methods to process.
 
-    Args:
-        path: path of individual data folder to process
+    Parameters
+    ----------
+    path: str,
+        path of individual data folder to process
 
+    frequency :
+        Default is
+
+    Returns
+    -------
+    True if process succeeds; False, otherwise.
     """
-    acc = os.path.join(path, "acc.txt")
-    obd = os.path.join(path, "obd.txt")
     raw_acc = os.path.join(path, "raw_acc.txt")
     raw_obd = os.path.join(path, "raw_obd.txt")
     raw_gps = os.path.join(path, "gps.txt")
@@ -38,9 +63,8 @@ def process_data(path):
     raw_rot = os.path.join(path, "raw_rot.txt")
     ref_file = os.path.join(path, "raw_obd.txt")
     empty_ref_file_size = 360
-    # os.path.exists(acc) or os.path.exists(obd)
 
-    if(not os.path.exists(obd) or (os.stat(ref_file).st_size < empty_ref_file_size)):
+    if not os.path.exists(raw_obd) or (os.stat(ref_file).st_size < empty_ref_file_size):
         return
 
     files = [f for f in os.listdir(path) if os.path.isfile(f) and f != '.DS_Store']
@@ -61,7 +85,7 @@ def process_data(path):
             gyro_DF = pd.read_csv(raw_gyro)
         elif name.endswith("raw_rot.txt"):
             rot_DF = pd.read_csv(raw_rot, error_bad_lines=False, skipfooter=1)
-    ref_variable = 'timestamp'  # variable of obd file
+    ref_variable = 'timestamp'
     start_time = int(ref_DF[ref_variable].head(1))
     end_time = int(ref_DF[ref_variable].tail(1))
     process_acc(acc_DF, ref_DF, path, start_time, end_time)
@@ -72,21 +96,32 @@ def process_data(path):
     process_mag(mag_DF, ref_DF, path, start_time, end_time)
     process_rot(rot_DF, ref_DF, path, start_time, end_time)
 
+    data_type = ['acc', 'obd', 'gps', 'gyro', 'mag']
+    file_extension = '.txt'
+    # get the shared start time and end time
+    start_time, end_time = get_start_end_time(path)
+
 
 def process_acc(acc_DF, ref_DF, path, start_time, end_time):
     """
     Processes the 'raw_acc.txt' file and creates a new file 'acc_new.txt' with processed data 
 
-    Args:
-        acc_DF: dataframe of raw_acc.txt file
+    Parameters
+    ----------
+    acc_DF: dataframe
+        raw_acc.txt file
 
-        ref_DF: dataframe of reference file
+    ref_DF:
+        dataframe of reference file
 
-        path: path of data folder to process
+    path: str
+        path of data folder to process
 
-        start_time: start time from reference file
+    start_time: int
+        start time from reference file
 
-        end_time: end time from reference file
+    end_time: int
+        end time from reference file
 
     """
     raw_acc_1 = os.path.join(path, "acc_resampled.txt")
@@ -108,16 +143,14 @@ def process_acc(acc_DF, ref_DF, path, start_time, end_time):
         x = acc_DF.at[i, 'sys_time']
         a = datetime.strptime(x, pattern)
         a = int(a.microsecond/1000)
-        acc_DF.at[i, 'sys_time'] = (
-            a + (int(calendar.timegm(time.strptime(x, pattern))) * 1000))
+        acc_DF.at[i, 'sys_time'] = (a + (int(calendar.timegm(time.strptime(x, pattern))) * 1000))
     acc_DF.to_csv(raw_acc_1, index=False)
     acc_DF = acc_DF.dropna()
     acc_DF1 = acc_DF.dropna()
     acc_DF1 = acc_DF1.merge(ref_DF, how='left')
     acc_DF1 = acc_DF1.interpolate(method='linear')
     acc_DF1 = acc_DF1.rolling(rolling_window_size, min_periods=1).mean()
-    acc_DF1 = acc_DF1[['sys_time', 'abs_timestamp',
-                       'raw_x_acc', 'raw_y_acc', 'raw_z_acc']]
+    acc_DF1 = acc_DF1[['sys_time', 'abs_timestamp', 'raw_x_acc', 'raw_y_acc', 'raw_z_acc']]
     acc_DF1.to_csv(raw_acc_2, index=False)
 
 
