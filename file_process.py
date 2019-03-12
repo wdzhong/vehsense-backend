@@ -77,7 +77,7 @@ def process_data(path, sampling_rate, rolling_window_size):
     True if process succeeds; False, otherwise.
     """
     ref_file = os.path.join(path, "raw_obd.txt")
-    ref_DF = pd.read_csv(ref_file)
+    ref_df = pd.read_csv(ref_file)
 
     # get the shared start time and end time
     start_time, end_time = get_start_end_time(path)
@@ -87,17 +87,17 @@ def process_data(path, sampling_rate, rolling_window_size):
     for sensor in sensor_type:
         sensor_file = os.path.join(path, sensor_prefix + sensor + '.txt')
         if os.path.isfile(sensor_file):
-            process_motion_sensor_data(sensor_file, ref_DF, path, start_time, end_time, sampling_rate, rolling_window_size, sensor)
+            process_motion_sensor_data(sensor_file, ref_df, path, start_time, end_time, sampling_rate, rolling_window_size, sensor)
 
     gps_file = os.path.join(path, constants.GPS_FILE_NAME)
     if os.path.isfile(gps_file):
         df = pd.read_csv(gps_file, error_bad_lines=False, engine='python', skipfooter=1)
-        process_gps(df, ref_DF, path, start_time, end_time, sampling_rate, rolling_window_size)
+        process_gps(df, ref_df, path, start_time, end_time, sampling_rate, rolling_window_size)
 
     obd_file = os.path.join(path, constants.OBD_FILE_NAME)
     if os.path.isfile(obd_file):  # TODO: more check
         df = pd.read_csv(obd_file, error_bad_lines=False, engine='python', skipfooter=1)
-        process_obd(df, ref_DF, path, start_time, end_time, sampling_rate, rolling_window_size)
+        process_obd(df, ref_df, path, start_time, end_time, sampling_rate, rolling_window_size)
 
     return True
 
@@ -143,6 +143,7 @@ def process_motion_sensor_data(sensor_file: str, ref_df, path, start_time, end_t
     df['sys_time'] = pd.to_datetime(df['sys_time'], unit='ms')
     df = df.resample(sampling_rate, on='sys_time').mean()
     df.to_csv(resampled_file)
+
     df = pd.read_csv(resampled_file)
     df = df.dropna()
     pattern = '%Y-%m-%d %H:%M:%S.%f'
@@ -164,17 +165,17 @@ def process_motion_sensor_data(sensor_file: str, ref_df, path, start_time, end_t
     df_smoothed.to_csv(smoothed_file, index=False)
 
 
-def process_obd(obd_DF, ref_DF, path, start_time, end_time, sampling_rate, rolling_window_size):
+def process_obd(obd_df, ref_df, path, start_time, end_time, sampling_rate, rolling_window_size):
     """
     Processes the 'raw_obd.txt' file and create two new files, i.e.
         'obd_resampled.txt' and 'obd_smoothed.txt'
 
     Parameters
     ----------
-    obd_DF : DataFrame
+    obd_df : DataFrame
         dataframe of raw_obd.txt file
 
-    ref_DF : DataFrame obj
+    ref_df : DataFrame obj
         The DataFrame of the reference data
 
     path : str
@@ -193,56 +194,57 @@ def process_obd(obd_DF, ref_DF, path, start_time, end_time, sampling_rate, rolli
         The sliding window size in data smoothing
     """
     resampled_file = os.path.join(path, "obd_resampled.txt")
-    obd_DF['timestamp'] = obd_DF['timestamp'] - start_time
-    obd_DF['timestamp'] = pd.to_datetime(obd_DF['timestamp'], unit='ms')
-    #obd_DF['timestamp'] = obd_DF['timestamp'].astype(np.int64)
-    obd_DF = obd_DF.dropna(thresh=1, axis='columns')
-    obd_DF['RPM'] = obd_DF['RPM'].str.strip("RPM").astype('int64')
-    obd_DF['Speed'] = obd_DF['Speed'].str.strip("km/h").astype('int64')
-    obd_DF = obd_DF.rename(index=str, columns={"timestamp": "sys_time"})
-    obd_DF = obd_DF.resample(sampling_rate, on='sys_time').mean()
-    obd_DF = obd_DF.dropna()
+    obd_df['timestamp'] = obd_df['timestamp'] - start_time
+    obd_df['timestamp'] = pd.to_datetime(obd_df['timestamp'], unit='ms')
+    #obd_df['timestamp'] = obd_df['timestamp'].astype(np.int64)
+    obd_df = obd_df.dropna(thresh=1, axis='columns')
+    obd_df['RPM'] = obd_df['RPM'].str.strip("RPM").astype('int64')
+    obd_df['Speed'] = obd_df['Speed'].str.strip("km/h").astype('int64')
+    obd_df = obd_df.rename(index=str, columns={"timestamp": "sys_time"})
+    obd_df = obd_df.resample(sampling_rate, on='sys_time').mean()
+    obd_df = obd_df.dropna()
     # TODO: include quote in fields for to_csv
-    obd_DF.to_csv(resampled_file)
-    obd_DF1 = pd.read_csv(resampled_file)
-    obd_DF['RPM'] = obd_DF['RPM'].astype('str') + 'RPM'
-    obd_DF['Speed'] = obd_DF['Speed'].astype('str') + 'km/h'
-    obd_DF.to_csv(resampled_file)
+    obd_df.to_csv(resampled_file)
+
+    obd_df1 = pd.read_csv(resampled_file)
+    obd_df['RPM'] = obd_df['RPM'].astype('str') + 'RPM'
+    obd_df['Speed'] = obd_df['Speed'].astype('str') + 'km/h'
+    obd_df.to_csv(resampled_file)
     pattern = '%Y-%m-%d %H:%M:%S.%f'
-    for i in obd_DF1.index.tolist():
-        a = datetime.strptime(obd_DF1.loc[i, 'sys_time'], pattern)
+    for i in obd_df1.index.tolist():
+        a = datetime.strptime(obd_df1.loc[i, 'sys_time'], pattern)
         a = int(a.microsecond/1000)
-        x = obd_DF1.at[i, 'sys_time']
-        obd_DF1.at[i, 'sys_time'] = a + \
+        x = obd_df1.at[i, 'sys_time']
+        obd_df1.at[i, 'sys_time'] = a + \
             (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
-    obd_DF1.to_csv(resampled_file, index=False)
+    obd_df1.to_csv(resampled_file, index=False)
 
     smoothed_file = os.path.join(path, "obd_smoothed.txt")
-    obd_DF1 = obd_DF1.dropna()
-    obd_DF1 = obd_DF1.interpolate(method='linear')
-    obd_DF1 = obd_DF1.rolling(rolling_window_size, min_periods=1).mean()
-    for i in obd_DF1.index.tolist():
-        x = obd_DF1.at[i, 'sys_time']
+    obd_df1 = obd_df1.dropna()
+    obd_df1 = obd_df1.interpolate(method='linear')
+    obd_df1 = obd_df1.rolling(rolling_window_size, min_periods=1).mean()
+    for i in obd_df1.index.tolist():
+        x = obd_df1.at[i, 'sys_time']
         if (x % 100 >= 50):
-            obd_DF1.at[i, 'sys_time'] = int(x / 100) * 100 + 100
+            obd_df1.at[i, 'sys_time'] = int(x / 100) * 100 + 100
         else:
-            obd_DF1.at[i, 'sys_time'] = int(x / 100) * 100
-    obd_DF1 = obd_DF1.rename(index=str, columns={"sys_time": "timestamp"})
-    obd_DF1 = obd_DF1.drop_duplicates(subset=['timestamp'], keep=False)
-    obd_DF1.to_csv(smoothed_file, index=False)
+            obd_df1.at[i, 'sys_time'] = int(x / 100) * 100
+    obd_df1 = obd_df1.rename(index=str, columns={"sys_time": "timestamp"})
+    obd_df1 = obd_df1.drop_duplicates(subset=['timestamp'], keep=False)
+    obd_df1.to_csv(smoothed_file, index=False)
 
 
-def process_gps(gps_DF, ref_DF, path, start_time, end_time, sampling_rate, rolling_window_size):
+def process_gps(gps_df, ref_df, path, start_time, end_time, sampling_rate, rolling_window_size):
     """
     Processes the 'gps.txt' file and create two new files, i.e.
         'gps_resampled.txt' and 'gps_smoothed.txt'
 
     Parameters
     ----------
-    gps_DF : DataFrame
+    gps_df : DataFrame
         dataframe of gps.txt file
 
-    ref_DF : DataFrame obj
+    ref_df : DataFrame obj
         The DataFrame of the reference data
 
     path : str
@@ -262,31 +264,32 @@ def process_gps(gps_DF, ref_DF, path, start_time, end_time, sampling_rate, rolli
     """
     # Add provider column in processed file
     resampled_file = os.path.join(path, "gps_resampled.txt")
-    gps_DF['system_time'] = gps_DF['system_time'].astype('int64')
-   # print(gps_DF['system_time'].dtype)
-    gps_DF = gps_DF.loc[(gps_DF['system_time'] >= start_time)
-                        & (gps_DF['system_time'] <= end_time)]
-    gps_DF['system_time'] = gps_DF['system_time'] - start_time
-    gps_DF['system_time'] = pd.to_datetime(gps_DF['system_time'], unit='ms')
-    gps_DF = gps_DF.resample(sampling_rate, on='system_time').mean()
+    gps_df['system_time'] = gps_df['system_time'].astype('int64')
+   # print(gps_df['system_time'].dtype)
+    gps_df = gps_df.loc[(gps_df['system_time'] >= start_time)
+                        & (gps_df['system_time'] <= end_time)]
+    gps_df['system_time'] = gps_df['system_time'] - start_time
+    gps_df['system_time'] = pd.to_datetime(gps_df['system_time'], unit='ms')
+    gps_df = gps_df.resample(sampling_rate, on='system_time').mean()
     pattern = '%Y-%m-%d %H:%M:%S.%f'
-    gps_DF.to_csv(resampled_file)
-    gps_DF1 = pd.read_csv(resampled_file)
-    for i in gps_DF1.index.tolist():
-        a = datetime.strptime(gps_DF1.loc[i, 'system_time'], pattern)
+    gps_df.to_csv(resampled_file)
+
+    gps_df1 = pd.read_csv(resampled_file)
+    for i in gps_df1.index.tolist():
+        a = datetime.strptime(gps_df1.loc[i, 'system_time'], pattern)
         a = int(a.microsecond / 1000)
-        x = gps_DF1.at[i, 'system_time']
-        gps_DF1.at[i, 'system_time'] = a + \
+        x = gps_df1.at[i, 'system_time']
+        gps_df1.at[i, 'system_time'] = a + \
             (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
-    gps_DF1.to_csv(resampled_file, index=False)
+    gps_df1.to_csv(resampled_file, index=False)
 
     smoothed_file = os.path.join(path, "gps_smoothed.txt")
-    gps_DF1 = gps_DF1.dropna()
-    gps_DF1 = gps_DF1.merge(ref_DF, how='left')
-    gps_DF1 = gps_DF1.interpolate(method='linear')
-    gps_DF1 = gps_DF1[["system_time", "lat", "lon", "speed", "bearing"]]
-    gps_DF1 = gps_DF1.rolling(rolling_window_size, min_periods=1).mean()
-    gps_DF1.to_csv(smoothed_file, index=False)
+    gps_df1 = gps_df1.dropna()
+    gps_df1 = gps_df1.merge(ref_df, how='left')
+    gps_df1 = gps_df1.interpolate(method='linear')
+    gps_df1 = gps_df1[["system_time", "lat", "lon", "speed", "bearing"]]
+    gps_df1 = gps_df1.rolling(rolling_window_size, min_periods=1).mean()
+    gps_df1.to_csv(smoothed_file, index=False)
 
 
 def sub_dir_path(d):
