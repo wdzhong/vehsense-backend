@@ -19,24 +19,6 @@ parent_path = os.path.dirname(os.path.realpath(__file__))
 path = os.path.join(parent_path, "vehsense-backend-data")
 
 
-def check_if_processed(path):
-    print(path, "--------------------------")
-    try:
-        with open(os.path.join(parent_path, "preprocessed_files.txt"), "r") as my_file:
-            lines = my_file.readlines()
-            for line in lines:
-                print(path, "--------------------------", line.trim())
-                if line.trim() == path:
-
-                    return True
-    #            memory_map = mmap.mmap(my_file.fileno(), 0)
-    #            match_object = re.search(path, memory_map)
-    #            memory_map.close()
-    except:
-        return False
-    return False
-
-
 def process_data(path):
     """
     Creates the individual paths of files and dataframes for the individual file methods to process.
