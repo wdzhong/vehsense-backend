@@ -61,43 +61,34 @@ def process_data(path):
     if(not os.path.exists(obd) or (os.stat(ref_file).st_size < empty_ref_file_size)):
         return
 
-    for root, subdirs, files in os.walk(path):
-        ref_DF = pd.read_csv(ref_file)
-        for name in files:
-            if name.endswith("raw_acc.txt"):
-                    #print ("raw_acc.txt")
-                    # TOFIX: File doesn't exist error
-                acc_DF = pd.read_csv(raw_acc)
-            elif name.endswith("raw_obd.txt"):
-                #print (ref_file)
-                obd_DF = pd.read_csv(raw_obd)
-            elif name.endswith("gps.txt"):
-                #print (ref_file)
-                gps_DF = pd.read_csv(raw_gps)
-            elif name.endswith("raw_grav.txt"):
-                #print (ref_file)
-                grav_DF = pd.read_csv(raw_grav)
-            elif name.endswith("raw_mag.txt"):
-                #print (ref_file)
-                mag_DF = pd.read_csv(
-                    raw_mag, error_bad_lines=False, skipfooter=1)
-            elif name.endswith("raw_gyro.txt"):
-                #print (ref_file)
-                gyro_DF = pd.read_csv(raw_gyro)
-            elif name.endswith("raw_rot.txt"):
-                #print (ref_file)
-                rot_DF = pd.read_csv(
-                    raw_rot, error_bad_lines=False, skipfooter=1)
-        ref_variable = 'timestamp'  # variable of obd file
-        start_time = int(ref_DF[ref_variable].head(1))
-        end_time = int(ref_DF[ref_variable].tail(1))
-        process_acc(acc_DF, ref_DF, path, start_time, end_time)
-        process_obd(obd_DF, ref_DF, path, start_time, end_time)
-        process_gps(gps_DF, ref_DF, path, start_time, end_time)
-        process_grav(grav_DF, ref_DF, path, start_time, end_time)
-        process_gyro(gyro_DF, ref_DF, path, start_time, end_time)
-        process_mag(mag_DF, ref_DF, path, start_time, end_time)
-        process_rot(rot_DF, ref_DF, path, start_time, end_time)
+    files = [f for f in os.listdir(path) if os.path.isfile(f) and f != '.DS_Store']
+
+    ref_DF = pd.read_csv(ref_file)
+    for name in files:
+        if name.endswith("raw_acc.txt"):
+            acc_DF = pd.read_csv(raw_acc)
+        elif name.endswith("raw_obd.txt"):
+            obd_DF = pd.read_csv(raw_obd)
+        elif name.endswith("gps.txt"):
+            gps_DF = pd.read_csv(raw_gps)
+        elif name.endswith("raw_grav.txt"):
+            grav_DF = pd.read_csv(raw_grav)
+        elif name.endswith("raw_mag.txt"):
+            mag_DF = pd.read_csv(raw_mag, error_bad_lines=False, skipfooter=1)
+        elif name.endswith("raw_gyro.txt"):
+            gyro_DF = pd.read_csv(raw_gyro)
+        elif name.endswith("raw_rot.txt"):
+            rot_DF = pd.read_csv(raw_rot, error_bad_lines=False, skipfooter=1)
+    ref_variable = 'timestamp'  # variable of obd file
+    start_time = int(ref_DF[ref_variable].head(1))
+    end_time = int(ref_DF[ref_variable].tail(1))
+    process_acc(acc_DF, ref_DF, path, start_time, end_time)
+    process_obd(obd_DF, ref_DF, path, start_time, end_time)
+    process_gps(gps_DF, ref_DF, path, start_time, end_time)
+    process_grav(grav_DF, ref_DF, path, start_time, end_time)
+    process_gyro(gyro_DF, ref_DF, path, start_time, end_time)
+    process_mag(mag_DF, ref_DF, path, start_time, end_time)
+    process_rot(rot_DF, ref_DF, path, start_time, end_time)
 
 
 def process_acc(acc_DF, ref_DF, path, start_time, end_time):
@@ -419,31 +410,36 @@ def sub_dir_path(d):
     return filter(os.path.isdir, [os.path.join(d, f) for f in os.listdir(d)])
 
 
-def process_data_main(preprocess_path, frequency):
+def process_data_main(data_path, frequency):
     """
     Parses the directory in the provided path and processes the individual sub-directories.
 
     Parameters
     -----------
-    preprocess_path : str
+    data_path : str
         path of data folder to process
 
-    frequency : int
+    frequency : int/float
         resampling frequency
     """
     sampling_rate = str(1000.0 / frequency)
     sampling_rate = sampling_rate + 'L'
-#   print(sampling_rate)
-    for subdir in sub_dir_path(preprocess_path):
-        subdirs = sub_dir_path(subdir)
-        for subdir_datewise in subdirs:
-            if check_if_processed(subdir_datewise):
-                #    print ("Skipping as trip already processed ", path)
-                return
-            process_data(subdir_datewise)
-    # TO FIX: open(os.path.join(parent_path,"preprocessed_files.txt") stores only 1 path
-            with open(os.path.join(parent_path, "preprocessed_files.txt"), "a+") as preprocessed_file:
-                preprocessed_file.write(subdir_datewise + "\n")
+
+    for root, folders, files in os.walk(data_path):
+        if root == data_path:
+            continue
+
+        good = False
+        for f in files:
+            if 'gps' in f:
+                good = True
+                break
+        if not good:
+            continue
+
+        # TODO: check if the folder has been preprocessed before or not
+
+        process_data(root)
 
 
 if __name__ == "__main__":
