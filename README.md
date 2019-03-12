@@ -28,7 +28,8 @@ The program should be running like a prompt which can accept predefined commands
 - [ ] **new [-t mm/dd/yyyy]**: show newly added data (trips) since the specified `time` point, last time running this command, or `yesterday`.
 - [ ] **preprocess \[-d directory=data] \[-f frequency=200]**: preprocess files under the given directory. This may be called after `unzip` with merge. Aand `clean` should have been called as well. Sync the start timestamps of different type of data and choose the latest one (on which may add another couple of seconds) as the start point of the current data. Then carry out interpolation.
   - `-d directory` The directory to deal with
-  - `-f frequency=200`: the frequency we want to interpolate. Default is 200Hz, i.e., 5ms
+  - `-f frequency=200`: The frequency we want to interpolate. Default is 200Hz, i.e., 5ms
+  - `-w rolling_window_size=100` : The size of sliding window in data smoothing.
   - `-c clean=False`: If `True`, then it will call `clean` first before `preprocess`.
 - [ ] **rm [directory=data] prefix suffix \[-f force=False]**: remove files that meet the given requirement under given directory:
     - `directory`: The directory to start with. Default is `./data`.

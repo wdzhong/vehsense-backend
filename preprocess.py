@@ -28,6 +28,7 @@ def preprocess(input_string, configs=None):
         input_map = convert_to_map(input_string)
         frequency = float(input_map.get('-f', 200))
         data_path = input_map.get('-d', None)
+        rolling_window_size = input_map.get('-w', 50)
 
         if not data_path and configs:
             data_path = configs['data_path']
@@ -36,6 +37,7 @@ def preprocess(input_string, configs=None):
             print("ERROR: preprocess(): data path is not set")
             return
 
+        # TODO: accept more flags for clean
         clean_flag = input_map.get('-c', "false")
         if clean_flag.lower() == 'true':
             clean_options = ["-d", data_path]
@@ -45,4 +47,4 @@ def preprocess(input_string, configs=None):
             print("interpolation rate %f Hz" % frequency)
             print("data path: %s" % data_path)
 
-        file_process.process_data_main(data_path, frequency)
+        file_process.process_data_main(data_path, frequency, rolling_window_size)
