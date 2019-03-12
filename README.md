@@ -29,11 +29,11 @@ The program should be running like a prompt which can accept predefined commands
 - [ ] **preprocess \[-d directory=data] \[-f frequency=200]**: preprocess files under the given directory. This may be called after `unzip` with merge. Aand `clean` should have been called as well. Sync the start timestamps of different type of data and choose the latest one (on which may add another couple of seconds) as the start point of the current data. Then carry out interpolation.
   - ``-d directory`` The directory to deal with
   - ``-f frequency=200``: the frequency we want to interpolate. Default is 200Hz, i.e., 5ms
-- [ ] **rm -d directory -p prefix -e extension \[-r=False]**: remove files that meet the given requirement under given directory:
-    - `-d directory` The directory to start with.
-    - `-p prefix` The prefix of files to be removed.
-    - `-e extension` The extension of the files to be removed.
-    - `-r=False` Recursive. If `True`, then remove files from sub folders as well.
+- [ ] **rm [directory=data] prefix suffix \[-f force=False]**: remove files that meet the given requirement under given directory:
+    - `directory`: The directory to start with. Default is `./data`.
+    - `prefix`: The prefix of files to be removed, which can be empty, i.e. `""`.
+    - `suffix`: The suffix of files to be removed, which can be empty, i.e. `""`.
+    - `-f force=False`: If `True`, then remove files without user confirm.
 - [ ] **size**: overall size, and size for each user
 - [x] **unzip \[-f filename] \[-d directory=data] \[--compress-type='.zip'] \[--delete=False] \[--merge=True] \[--delete-unzip=True]**: decompress the speficied file, or all compressed files under specified directory and all sub folders.
   - If `--delete` is set to be `True`, then the original compressed file(s) will be deleted after decompression.

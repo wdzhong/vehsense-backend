@@ -19,6 +19,7 @@ from backup import backup
 from size_cmd import size_cmd
 from new_cmd import new_cmd
 
+from utils import remove_files_matching
 
 debug = True
 
@@ -30,6 +31,7 @@ commands_dict["backup"] = "backup data. Ask for backup location if [-d] is not s
 commands_dict["exit"] = "exits VehSense backend."
 commands_dict["unzip"] = "decompress the specified file, or compressed files under specified directory."
 commands_dict["preprocess"] = "preprocess the files in the specified directory."
+commands_dict["rm"] = "remove files meeting specified conditions from the given directory"
 
 cmd_list = {"clean": clean_file, "size": size_cmd, "new": new_cmd,
             "backup": backup, "unzip": decompress_file, "preprocess": preprocess}
@@ -157,6 +159,27 @@ def main(args):
                 print("missing args")
         elif received_cmd == 'dir':
             print("current data path: %s" % configs['data_path'])
+        elif received_cmd == 'rm':
+            # to deal with empty string
+            input_segments = [s.replace('"', '').replace("'", '') for s in input_segments]
+
+            if len(input_segments) == 4:
+                if os.path.isdir(input_segments[1]):
+                    target_path = input_segments[1]
+                    prefix = input_segments[2]
+                    suffix = input_segments[3]
+                else:
+                    print("The provided path %s is invalid." % target_path)
+                    continue
+            elif len(input_segments) == 3:
+                target_path = configs['data_path']
+                prefix = input_segments[1]
+                suffix = input_segments[2]
+            else:
+                print("'rm' command takes two paramters, i.e. 'rm prefix suffix', or\n\t three parameters, i.e. 'rm target_path prefix suffix'")
+                continue
+            print(target_path, prefix, suffix)
+            remove_files_matching(target_path, prefix, suffix)
         elif received_cmd in cmd_list:
             if len(input_segments) == 1:
                 cmd_help(input_segments[0])
