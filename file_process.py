@@ -62,7 +62,7 @@ def get_start_end_time(folder):
     return start, end
 
 
-def process_data(path, frequency=200):
+def process_data(path, sampling_rate, rolling_window_size):
     """
     Creates the individual paths of files and dataframes for the individual file methods to process.
 
@@ -71,114 +71,81 @@ def process_data(path, frequency=200):
     path: str,
         path of individual data folder to process
 
-    frequency :
+    sampling_rate : str
         Default is
 
+    rolling_window_size : int
+        Default is 50.
     Returns
     -------
     True if process succeeds; False, otherwise.
     """
-    raw_acc = os.path.join(path, "raw_acc.txt")
-    raw_obd = os.path.join(path, "raw_obd.txt")
-    raw_gps = os.path.join(path, "gps.txt")
-    raw_grav = os.path.join(path, "raw_grav.txt")
-    raw_gyro = os.path.join(path, "raw_gyro.txt")
-    raw_mag = os.path.join(path, "raw_mag.txt")
-    raw_rot = os.path.join(path, "raw_rot.txt")
     ref_file = os.path.join(path, "raw_obd.txt")
-    empty_ref_file_size = 360
-
-    if not os.path.exists(raw_obd) or (os.stat(ref_file).st_size < empty_ref_file_size):
-        return
-
-    files = [f for f in os.listdir(path) if os.path.isfile(f) and f != '.DS_Store']
-
     ref_DF = pd.read_csv(ref_file)
-    for name in files:
-        if name.endswith("raw_acc.txt"):
-            acc_DF = pd.read_csv(raw_acc)
-        elif name.endswith("raw_obd.txt"):
-            obd_DF = pd.read_csv(raw_obd)
-        elif name.endswith("gps.txt"):
-            gps_DF = pd.read_csv(raw_gps)
-        elif name.endswith("raw_grav.txt"):
-            grav_DF = pd.read_csv(raw_grav)
-        elif name.endswith("raw_mag.txt"):
-            mag_DF = pd.read_csv(raw_mag, error_bad_lines=False, skipfooter=1)
-        elif name.endswith("raw_gyro.txt"):
-            gyro_DF = pd.read_csv(raw_gyro)
-        elif name.endswith("raw_rot.txt"):
-            rot_DF = pd.read_csv(raw_rot, error_bad_lines=False, skipfooter=1)
-    ref_variable = 'timestamp'
-    start_time = int(ref_DF[ref_variable].head(1))
-    end_time = int(ref_DF[ref_variable].tail(1))
-    process_acc(acc_DF, ref_DF, path, start_time, end_time)
-    process_obd(obd_DF, ref_DF, path, start_time, end_time)
-    process_gps(gps_DF, ref_DF, path, start_time, end_time)
-    process_grav(grav_DF, ref_DF, path, start_time, end_time)
-    process_gyro(gyro_DF, ref_DF, path, start_time, end_time)
-    process_mag(mag_DF, ref_DF, path, start_time, end_time)
-    process_rot(rot_DF, ref_DF, path, start_time, end_time)
 
-    data_type = ['acc', 'obd', 'gps', 'gyro', 'mag']
-    file_extension = '.txt'
     # get the shared start time and end time
     start_time, end_time = get_start_end_time(path)
 
+    sensor_type = ['acc', 'gyro', 'mag', 'rot', 'grav']
+    sensor_prefix = 'raw_'
+    for sensor in sensor_type:
+        sensor_file = os.path.join(path, sensor_prefix + sensor + '.txt')
+        if os.path.isfile(sensor_file):
+            process_motion_sensor_data(sensor_file, ref_DF, path, start_time, end_time, sampling_rate, rolling_window_size, sensor)
 
-def process_acc(acc_DF, ref_DF, path, start_time, end_time):
+    gps_file = os.path.join(path, constants.GPS_FILE_NAME)
+    if os.path.isfile(gps_file):
+        df = pd.read_csv(gps_file, error_bad_lines=False, engine='python', skipfooter=1)
+        process_gps(df, ref_DF, path, start_time, end_time, sampling_rate, rolling_window_size)
+
+    obd_file = os.path.join(path, constants.OBD_FILE_NAME)
+    if os.path.isfile(obd_file):  # TODO: more check
+        df = pd.read_csv(obd_file, error_bad_lines=False, engine='python', skipfooter=1)
+        process_obd(df, ref_DF, path, start_time, end_time, sampling_rate, rolling_window_size)
+
+    return True
+
+
+def process_motion_sensor_data(sensor_file: str, ref_df, path, start_time, end_time, sampling_rate, rolling_window_size, sensor):
     """
-    Processes the 'raw_acc.txt' file and creates a new file 'acc_new.txt' with processed data 
+    Process motion sensor data, and create two new files, i.e.
+        '[sensor_name]_resampled.txt' and '[sensor_name]_smoothed.txt'
 
     Parameters
     ----------
-    acc_DF: dataframe
-        raw_acc.txt file
-
-    ref_DF:
-        dataframe of reference file
-
-    path: str
-        path of data folder to process
-
-    start_time: int
-        start time from reference file
-
-    end_time: int
-        end time from reference file
-
+    sensor_file : str
+        The sensor file
     """
-    raw_acc_1 = os.path.join(path, "acc_resampled.txt")
-    raw_acc_2 = os.path.join(path, "acc_smoothed.txt")
-    acc_DF['sys_time'] = acc_DF['sys_time'].astype('int64')
-    acc_DF = acc_DF.loc[(acc_DF['sys_time'] >= start_time)
-                        & (acc_DF['sys_time'] <= end_time)]
-    acc_DF['sys_time'] = acc_DF['sys_time'] - start_time
-    acc_DF['sys_time'] = pd.to_datetime(acc_DF['sys_time'], unit='ms')
-    acc_DF = acc_DF.resample(sampling_rate, on='sys_time').mean()
-    # TODO: include quote in fields for to_csv
-
-    acc_DF.to_csv(raw_acc_1)
-    acc_DF = pd.read_csv(raw_acc_1)
+    df = pd.read_csv(sensor_file, error_bad_lines=False, engine='python', skipfooter=1)
+    resampled_file = os.path.join(path, sensor + "_resampled.txt")
+    df['sys_time'] = df['sys_time'].astype('int64')
+    df = df.loc[(df['sys_time'] >= start_time)
+                        & (df['sys_time'] <= end_time)]
+    df['sys_time'] = df['sys_time'] - start_time
+    df['sys_time'] = pd.to_datetime(df['sys_time'], unit='ms')
+    df = df.resample(sampling_rate, on='sys_time').mean()
+    df.to_csv(resampled_file)
+    df = pd.read_csv(resampled_file)
+    df = df.dropna()
     pattern = '%Y-%m-%d %H:%M:%S.%f'
-    acc_DF = acc_DF[['sys_time', 'timestamp', 'abs_timestamp',
-                     'raw_x_acc', 'raw_y_acc', 'raw_z_acc']]
-    for i in acc_DF.index.tolist():
-        x = acc_DF.at[i, 'sys_time']
-        a = datetime.strptime(x, pattern)
+    for i in df.index.tolist():
+        a = datetime.strptime(df.loc[i, 'sys_time'], pattern)
         a = int(a.microsecond/1000)
-        acc_DF.at[i, 'sys_time'] = (a + (int(calendar.timegm(time.strptime(x, pattern))) * 1000))
-    acc_DF.to_csv(raw_acc_1, index=False)
-    acc_DF = acc_DF.dropna()
-    acc_DF1 = acc_DF.dropna()
-    acc_DF1 = acc_DF1.merge(ref_DF, how='left')
-    acc_DF1 = acc_DF1.interpolate(method='linear')
-    acc_DF1 = acc_DF1.rolling(rolling_window_size, min_periods=1).mean()
-    acc_DF1 = acc_DF1[['sys_time', 'abs_timestamp', 'raw_x_acc', 'raw_y_acc', 'raw_z_acc']]
-    acc_DF1.to_csv(raw_acc_2, index=False)
+        x = df.at[i, 'sys_time']
+        df.at[i, 'sys_time'] = a + \
+            (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
+    df.to_csv(resampled_file, index=False)
+
+    smoothed_file = os.path.join(path, sensor + "_smoothed.txt")
+    df_smoothed = df.dropna()
+    df_smoothed = df_smoothed.dropna()
+    df_smoothed = df.merge(ref_df, how='left')
+    df_smoothed = df.interpolate(method='linear')
+    df_smoothed = df.rolling(rolling_window_size, min_periods=1).mean()
+    df_smoothed = df[["sys_time", "raw_x_" + sensor, "raw_y_" + sensor, "raw_z_" + sensor]]
+    df_smoothed.to_csv(smoothed_file, index=False)
 
 
-def process_obd(obd_DF, ref_DF, path, start_time, end_time):
     """
     Processes the 'raw_obd.txt' file and creates a new file 'obd_new.txt' with processed data 
 
@@ -271,169 +238,6 @@ def process_gps(gps_DF, ref_DF, path, start_time, end_time):
     gps_DF1 = gps_DF1[["system_time", "lat", "lon", "speed", "bearing"]]
     gps_DF1 = gps_DF1.rolling(rolling_window_size, min_periods=1).mean()
     gps_DF1.to_csv(raw_gps_2, index=False)
-
-
-def process_grav(grav_DF, ref_DF, path, start_time, end_time):
-    """
-    Processes the 'raw_grav.txt' file and creates a new file 'grav_new.txt' with processed data 
-
-    Args:
-        grav_DF: dataframe of raw_grav.txt file
-
-        path: path of data folder to process
-
-        start_time: start time from reference file
-
-        end_time: end time from reference file
-    """
-    raw_grav_1 = os.path.join(path, "grav_resampled.txt")
-    raw_grav_2 = os.path.join(path, "grav_smoothed.txt")
-    grav_DF['sys_time'] = grav_DF['sys_time'].astype('int64')
-    # print(grav_DF['sys_time'].dtype)
-    grav_DF = grav_DF.loc[(grav_DF['sys_time'] >= start_time)
-                          & (grav_DF['sys_time'] <= end_time)]
-    grav_DF['sys_time'] = grav_DF['sys_time'] - start_time
-    grav_DF['sys_time'] = pd.to_datetime(grav_DF['sys_time'], unit='ms')
-    grav_DF = grav_DF.resample(sampling_rate, on='sys_time').mean()
-    grav_DF.to_csv(raw_grav_1)
-    grav_DF = pd.read_csv(raw_grav_1)
-    pattern = '%Y-%m-%d %H:%M:%S.%f'
-    for i in grav_DF.index.tolist():
-        a = datetime.strptime(grav_DF.loc[i, 'sys_time'], pattern)
-        a = int(a.microsecond/1000)
-        x = grav_DF.at[i, 'sys_time']
-        grav_DF.at[i, 'sys_time'] = a + \
-            (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
-    grav_DF.to_csv(raw_grav_1, index=False)
-    grav_DF = grav_DF.dropna()
-    grav_DF1 = grav_DF.dropna()
-    grav_DF1 = grav_DF1.merge(ref_DF, how='left')
-    grav_DF1 = grav_DF1.interpolate(method='linear')
-    grav_DF1 = grav_DF1.rolling(rolling_window_size, min_periods=1).mean()
-    grav_DF1 = grav_DF1[["sys_time", "raw_x_grav", "raw_y_grav", "raw_z_grav"]]
-    grav_DF1.to_csv(raw_grav_2, index=False)
-
-
-def process_mag(mag_DF, ref_DF, path, start_time, end_time):
-    """
-    Processes the 'raw_mag.txt' file and creates a new file 'mag_new.txt' with processed data 
-
-    Args:
-        mag_DF: dataframe of raw_mag.txt file
-
-        path: path of data folder to process
-
-        start_time: start time from reference file
-
-        end_time: end time from reference file
-
-    """
-    raw_mag_1 = os.path.join(path, "mag_resampled.txt")
-    raw_mag_2 = os.path.join(path, "mag_smoothed.txt")
-    mag_DF = mag_DF.loc[(mag_DF['sys_time'] >= start_time)
-                        & (mag_DF['sys_time'] <= end_time)]
-    mag_DF['sys_time'] = mag_DF['sys_time'] - start_time
-    mag_DF['sys_time'] = pd.to_datetime(mag_DF['sys_time'], unit='ms')
-    mag_DF = mag_DF.resample(sampling_rate, on='sys_time').mean()
-    pattern = '%Y-%m-%d %H:%M:%S.%f'
-    mag_DF.to_csv(raw_mag_1)
-    mag_DF = pd.read_csv(raw_mag_1)
-    for i in mag_DF.index.tolist():
-        a = datetime.strptime(mag_DF.loc[i, 'sys_time'], pattern)
-        a = int(a.microsecond/1000)
-        x = mag_DF.at[i, 'sys_time']
-        mag_DF.at[i, 'sys_time'] = a + \
-            (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
-    mag_DF.to_csv(raw_mag_1, index=False)
-    mag_DF = mag_DF.dropna()
-    mag_DF1 = mag_DF.dropna()
-    mag_DF1 = mag_DF1.merge(ref_DF, how='left')
-    mag_DF1 = mag_DF1.interpolate(method='linear')
-    mag_DF1 = mag_DF1.rolling(rolling_window_size, min_periods=1).mean()
-    mag_DF1 = mag_DF1[["sys_time", "raw_x_mag", "raw_y_mag", "raw_z_mag"]]
-    mag_DF1.to_csv(raw_mag_2, index=False)
-
-
-def process_gyro(gyro_DF, ref_DF, path, start_time, end_time):
-    """
-    Processes the 'raw_gyro.txt' file and creates a new file 'gyro_new.txt' with processed data 
-
-    Args:
-        gyro_DF: dataframe of raw_gyro.txt file
-
-        path: path of data folder to process
-
-        start_time: start time from reference file
-
-        end_time: end time from reference file
-
-    """
-    raw_gyro_1 = os.path.join(path, "gyro_resampled.txt")
-    raw_gyro_2 = os.path.join(path, "gyro_smoothed.txt")
-    gyro_DF['sys_time'] = gyro_DF['sys_time'].astype('int64')
-    gyro_DF = gyro_DF.loc[(gyro_DF['sys_time'] >= start_time)
-                          & (gyro_DF['sys_time'] <= end_time)]
-    gyro_DF['sys_time'] = gyro_DF['sys_time'] - start_time
-    gyro_DF['sys_time'] = pd.to_datetime(gyro_DF['sys_time'], unit='ms')
-    gyro_DF = gyro_DF.resample(sampling_rate, on='sys_time').mean()
-    gyro_DF.to_csv(raw_gyro_1)
-    gyro_DF = pd.read_csv(raw_gyro_1)
-    pattern = '%Y-%m-%d %H:%M:%S.%f'
-    for i in gyro_DF.index.tolist():
-        a = datetime.strptime(gyro_DF.loc[i, 'sys_time'], pattern)
-        a = int(a.microsecond/1000)
-        x = gyro_DF.at[i, 'sys_time']
-        gyro_DF.at[i, 'sys_time'] = a + \
-            (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
-    gyro_DF.to_csv(raw_gyro_1, index=False)
-    gyro_DF = gyro_DF.dropna()
-    gyro_DF1 = gyro_DF.dropna()
-    gyro_DF1 = gyro_DF1.merge(ref_DF, how='left')
-    gyro_DF1 = gyro_DF1.interpolate(method='linear')
-    gyro_DF1 = gyro_DF1.rolling(rolling_window_size, min_periods=1).mean()
-    gyro_DF1 = gyro_DF1[["sys_time", "raw_x_gyro", "raw_y_gyro", "raw_z_gyro"]]
-    gyro_DF1.to_csv(raw_gyro_2, index=False)
-
-
-def process_rot(rot_DF, ref_DF, path, start_time, end_time):
-    """
-    Processes the 'raw_rot.txt' file and creates a new file 'rot_new.txt' with processed data 
-
-    Args:
-        rot_DF: dataframe of raw_rot.txt file
-
-        path: path of data folder to process
-
-        start_time: start time from reference file
-
-        end_time: end time from reference file
-
-    """
-    raw_rot_1 = os.path.join(path, "rot_resampled.txt")
-    raw_rot_2 = os.path.join(path, "rot_smoothed.txt")
-    rot_DF['sys_time'] = rot_DF['sys_time'].astype('int64')
-    rot_DF = rot_DF.loc[(rot_DF['sys_time'] >= start_time)
-                        & (rot_DF['sys_time'] <= end_time)]
-    rot_DF['sys_time'] = rot_DF['sys_time'] - start_time
-    rot_DF['sys_time'] = pd.to_datetime(rot_DF['sys_time'], unit='ms')
-    rot_DF = rot_DF.resample(sampling_rate, on='sys_time').mean()
-    rot_DF.to_csv(raw_rot_1)
-    rot_DF = pd.read_csv(raw_rot_1)
-    rot_DF = rot_DF.dropna()
-    pattern = '%Y-%m-%d %H:%M:%S.%f'
-    for i in rot_DF.index.tolist():
-        a = datetime.strptime(rot_DF.loc[i, 'sys_time'], pattern)
-        a = int(a.microsecond/1000)
-        x = rot_DF.at[i, 'sys_time']
-        rot_DF.at[i, 'sys_time'] = a + \
-            (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
-    rot_DF.to_csv(raw_rot_1, index=False)
-    rot_DF1 = rot_DF.dropna()
-    rot_DF1 = rot_DF.merge(ref_DF, how='left')
-    rot_DF1 = rot_DF.interpolate(method='linear')
-    rot_DF1 = rot_DF.rolling(rolling_window_size, min_periods=1).mean()
-    rot_DF1 = rot_DF[["sys_time", "raw_x_rot", "raw_y_rot", "raw_z_rot"]]
-    rot_DF1.to_csv(raw_rot_2, index=False)
 
 
 def sub_dir_path(d):
