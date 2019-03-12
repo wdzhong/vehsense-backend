@@ -8,6 +8,7 @@ import calendar
 
 import constants
 
+debug = True
 
 global sampling_rate
 sampling_rate = '5L'
@@ -32,8 +33,31 @@ def get_start_end_time(folder):
     end_time : int
         System timestamp. The minimum end time of all data files.
     """
-    start = None
-    end = None
+    start = -1
+    end = sys.maxsize
+
+    sys_time = "sys_time"
+
+    # TODO: add more sensor
+    sensor_type = [constants.ACC_FILE_NAME, constants.GYRO_FILE_NAME]
+
+    files = os.listdir(folder)
+    for f in sensor_type:
+        if f in files:
+            raw_acc = os.path.join(folder, constants.ACC_FILE_NAME)
+            df = pd.read_csv(raw_acc, error_bad_lines=False, engine='python', skipfooter=1)
+            start = max(int(df[sys_time].head(1)), start)
+            end = min(int(df[sys_time].tail(1)), end)
+
+    system_time = "system_time"
+    if constants.GPS_FILE_NAME in files:
+        gps_file = os.path.join(folder, constants.GPS_FILE_NAME)
+        df = pd.read_csv(gps_file, error_bad_lines=False, engine='python', skipfooter=1)
+        start = max(int(df[system_time].head(1)), start)
+        end = min(int(df[system_time].tail(1)), end)
+
+    if debug:
+        print("start and end time: %d, %d" % (start, end))
 
     return start, end
 
