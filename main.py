@@ -53,8 +53,8 @@ def helper():
         prefix = " "
         preferredWidth = 100
         wrapper = textwrap.TextWrapper(initial_indent=prefix,
-                                    width=preferredWidth, subsequent_indent=' '*(len(longest_cmd)+2))
-        print("{:<10} {:<15}".format(command, wrapper.fill(commands_dict[command])))
+                                    width=preferredWidth, subsequent_indent=' '*(len(longest_cmd) + 4))
+        print("{0:<{1}s} {2:<}".format(command, len(longest_cmd) + 2, wrapper.fill(commands_dict[command])))
 
 
 def cmd_help(cmd):
