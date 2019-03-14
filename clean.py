@@ -50,36 +50,42 @@ def clean_file(input_string, configs=None):
         if debug:
             print('force_detele, top folder, acc needed, gyro needed, obd needed, gps interval, temp folder, min duration')
             print(force_delete, top_folder, acc_need_valid, gyro_need_valid, obd_need_valid, gps_max_interval, temp_folder, min_duration)
-        clean_all(force_delete, acc_need_valid, gyro_need_valid, obd_need_valid, top_folder, gps_max_interval, temp_folder, min_duration)
+        clean_all(top_folder, force_delete, acc_need_valid, gyro_need_valid, obd_need_valid, gps_max_interval, temp_folder, min_duration)
 
 
-def clean_all(force_delete, acc_need_valid, gyro_need_valid, obd_need_valid, top_folder, gps_max_interval, temp_folder, min_duration):
+def clean_all(root, force_delete, acc_need_valid, gyro_need_valid, obd_need_valid, gps_max_interval, temp_folder, min_duration):
     """
     Performs the clean operations of the individual files, invoked from within the clean_file method.
 
     Parameters
     ----------
+    root : str
+        The path of folder
+
     force_delete: str, 'True' or 'False'
         If 'True', then bad files will be deleted.
 
     acc_need_valid : str, 'True', or 'False'
+        If 'True', then good trip needs 'raw_acc.txt' file.
 
     gyro_need_valid : str, 'True' or 'False'
+        If 'True', then good trip needs 'raw_gyro.txt' file.
 
     obd_need_valid : str, 'True' or 'False'
-
-    top_folder : str
+        If 'True', then good trip needs 'raw_obd.txt' file.
 
     gps_max_interval : int
+        The maximum of average sample interval of a good gps data file.
 
     temp_folder : str
+        The temp folder to store the 'bad' trips data if they are not going to be force_deleted
 
     min_duration: int
-
+        The minimum duration/length of a good trip
     """
-    for root, _, _ in os.walk(top_folder):
+    for root, _, _ in os.walk(root):
         # TODO: this will prevent the program working on a single trip directly
-        if root == top_folder:
+        if root == root:
             continue
 
         if root.startswith(temp_folder):
@@ -91,6 +97,32 @@ def clean_all(force_delete, acc_need_valid, gyro_need_valid, obd_need_valid, top
 def clean_single_folder(root, force_delete, acc_need_valid, gyro_need_valid, obd_need_valid, gps_max_interval, temp_folder, min_duration):
     """
     Valid the given folder as request
+
+    Parameters
+    ----------
+    root : str
+        The path of folder
+
+    force_delete: str, 'True' or 'False'
+        If 'True', then bad files will be deleted.
+
+    acc_need_valid : str, 'True', or 'False'
+        If 'True', then good trip needs 'raw_acc.txt' file.
+
+    gyro_need_valid : str, 'True' or 'False'
+        If 'True', then good trip needs 'raw_gyro.txt' file.
+
+    obd_need_valid : str, 'True' or 'False'
+        If 'True', then good trip needs 'raw_obd.txt' file.
+
+    gps_max_interval : int
+        The maximum of average sample interval of a good gps data file.
+
+    temp_folder : str
+        The temp folder to store the 'bad' trips data if they are not going to be force_deleted
+
+    min_duration: int
+        The minimum duration/length of a good trip
     """
     files = [f for f in os.listdir(root) if os.path.isfile(os.path.join(root, f)) and f != '.DS_Store']
     if not files:
@@ -105,7 +137,16 @@ def clean_single_folder(root, force_delete, acc_need_valid, gyro_need_valid, obd
 
 def valid_acc(root):
     """
-    TODO:
+    Valid if the acc file is good or not in the given folder
+
+    Parameters
+    ----------
+    root : str
+        The path that contains the file
+
+    Returns
+    -------
+    True if the file is valid; False, otherwise
     """
     acc_file = os.path.join(root, constants.ACC_FILE_NAME)
     if not os.path.isfile(acc_file):
@@ -118,7 +159,16 @@ def valid_acc(root):
 
 def valid_gyro(root):
     """
-    TODO:
+    Valid if the gyro file is good or not in the given folder
+
+    Parameters
+    ----------
+    root : str
+        The path that contains the file
+
+    Returns
+    -------
+    True if the file is valid; False, otherwise
     """
     gyro_file = os.path.join(root, constants.GYRO_FILE_NAME)
     if not os.path.isfile(gyro_file):
@@ -131,7 +181,16 @@ def valid_gyro(root):
 
 def valid_obd(root):
     """
-    TODO:
+    Valid if the obd file is good or not in the given folder
+
+    Parameters
+    ----------
+    root : str
+        The path that contains the file
+
+    Returns
+    -------
+    True if the file is valid; False, otherwise
     """
     obd_file = os.path.join(root, constants.OBD_FILE_NAME)
     if not os.path.isfile(obd_file):
