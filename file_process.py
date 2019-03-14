@@ -152,6 +152,10 @@ def process_motion_sensor_data(sensor_file: str, path: str, start_time: int, end
     # TODO: use the time_new to replace the time column?
 
     df = pd.DataFrame(resampled_data, columns=df.columns)
+    for i in range(0, 3):
+        df[df.columns[i]] = df[df.columns[i]].astype(int)
+    for i in range(3, 6):
+        df[df.columns[i]] = df[df.columns[i]].map('{:.6f}'.format)
 
     df.to_csv(resampled_file, index=False)
 
@@ -162,6 +166,10 @@ def process_motion_sensor_data(sensor_file: str, path: str, start_time: int, end
     # TODO: the time columns should not be changed by the rolling
     df = df.rolling(rolling_window_size, min_periods=1).mean()
     # df = df[['timestamp', sys_time_header, 'abs_timestamp', "raw_x_" + sensor, "raw_y_" + sensor, "raw_z_" + sensor]]
+    for i in range(0, 3):
+        df[df.columns[i]] = df[df.columns[i]].astype(int)
+    for i in range(3, 6):
+        df[df.columns[i]] = df[df.columns[i]].map('{:.6f}'.format)
 
     df.to_csv(smoothed_file, index=False)
 
@@ -216,6 +224,9 @@ def process_obd(df, path, start_time, end_time, sampling_rate, rolling_window_si
         resampled_data[:, col] = np.interp(time_new, time_old, col_old)
 
     df = pd.DataFrame(resampled_data, columns=df.columns)
+    df[df.columns[0]] = df[df.columns[0]].astype(int)
+    df[df.columns[1]] = df[df.columns[1]].astype(int)
+    df[df.columns[2]] = df[df.columns[2]].map('{:.2f}'.format)
     # TODO: add these two if needed
     # df['RPM'] = df['RPM'].astype('str') + 'RPM'
     # df['Speed'] = df['Speed'].astype('str') + 'km/h'
@@ -225,6 +236,9 @@ def process_obd(df, path, start_time, end_time, sampling_rate, rolling_window_si
     # df = df.dropna()
     df = df.rolling(rolling_window_size, min_periods=1).mean()
 
+    df[df.columns[0]] = df[df.columns[0]].astype(int)
+    df[df.columns[1]] = df[df.columns[1]].astype(int)
+    df[df.columns[2]] = df[df.columns[2]].map('{:.2f}'.format)
     # TODO: might need
     # df = df.drop_duplicates(subset=[timestamp_header], keep=False)
     df.to_csv(smoothed_file, index=False)
@@ -279,6 +293,15 @@ def process_gps(df, path, start_time, end_time, sampling_rate, rolling_window_si
         resampled_data[:, col] = np.interp(time_new, time_old, col_old)
 
     df = pd.DataFrame(resampled_data, columns=df.columns[0: -1])
+    # example:
+    # df['cost'] = df['cost'].map('${:,.2f}'.format)
+    # df.style.format({'B': "{:0<4.0f}", 'D': '{:+.2f}'})
+    df[df.columns[0: 2]] = df[df.columns[0: 2]].astype(int)
+    df[df.columns[2]] = df[df.columns[2]].map('{:.14f}'.format)
+    df[df.columns[3]] = df[df.columns[3]].map('{:.14f}'.format)
+    df[df.columns[4]] = df[df.columns[4]].map('{:.2f}'.format)
+    df[df.columns[5]] = df[df.columns[5]].map('{:.2f}'.format)
+
     df['provider'] = 'gps'
     df.to_csv(resampled_file, index=False)
 
@@ -292,6 +315,12 @@ def process_gps(df, path, start_time, end_time, sampling_rate, rolling_window_si
     # df = df.dropna()
 
     df = df[df.columns[0: -1]].rolling(rolling_window_size, min_periods=1).mean()
+    df[df.columns[0: 2]] = df[df.columns[0: 2]].astype(int)
+    df[df.columns[2]] = df[df.columns[2]].map('{:.14f}'.format)
+    df[df.columns[3]] = df[df.columns[3]].map('{:.14f}'.format)
+    df[df.columns[4]] = df[df.columns[4]].map('{:.2f}'.format)
+    df[df.columns[5]] = df[df.columns[5]].map('{:.2f}'.format)
+
     df['provider'] = 'gps'
     df.to_csv(smoothed_file, index=False)
 
