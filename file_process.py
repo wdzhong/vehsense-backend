@@ -8,6 +8,8 @@ import calendar
 import sys
 
 import constants
+from helper import valid_obd_file, valid_gps_file
+
 
 debug = True
 
@@ -47,16 +49,20 @@ def get_start_end_time(folder):
     system_time = "system_time"
     if constants.GPS_FILE_NAME in files:
         gps_file = os.path.join(folder, constants.GPS_FILE_NAME)
-        df = pd.read_csv(gps_file, error_bad_lines=False, engine='python', skipfooter=1)
-        start = max(int(df[system_time].head(1)), start)
-        end = min(int(df[system_time].tail(1)), end)
+        # This should already have been done in 'clean'. Just in case here.
+        if valid_gps_file(gps_file):
+            df = pd.read_csv(gps_file, error_bad_lines=False, engine='python', skipfooter=1)
+            start = max(int(df[system_time].head(1)), start)
+            end = min(int(df[system_time].tail(1)), end)
 
     timestamp = "timestamp"
     if constants.OBD_FILE_NAME in files:
         obd_file = os.path.join(folder, constants.OBD_FILE_NAME)
-        df = pd.read_csv(obd_file, error_bad_lines=False, engine='python', skipfooter=1)
-        start = max(int(df[timestamp].head(1)), start)
-        end = min(int(df[timestamp].tail(1)), end)
+        # This should already have been done in 'clean'. Just in case here.
+        if valid_obd_file(obd_file):
+            df = pd.read_csv(obd_file, error_bad_lines=False, engine='python', skipfooter=1)
+            start = max(int(df[timestamp].head(1)), start)
+            end = min(int(df[timestamp].tail(1)), end)
 
     if debug:
         print("start and end time: %d, %d" % (start, end))
@@ -99,7 +105,7 @@ def process_data(path: str, sampling_rate: int, rolling_window_size: int):
             process_motion_sensor_data(sensor_file, path, start_time, end_time, sampling_rate, rolling_window_size, sensor)
 
     gps_file = os.path.join(path, constants.GPS_FILE_NAME)
-    if os.path.isfile(gps_file):
+    if valid_gps_file(gps_file):
         if debug:
             print("process: %s" % gps_file)
         # read_csv('x.csv', parse_dates=[0], index_col=0, squeeze=True)
@@ -107,7 +113,7 @@ def process_data(path: str, sampling_rate: int, rolling_window_size: int):
         process_gps(df, path, start_time, end_time, sampling_rate, rolling_window_size)
 
     obd_file = os.path.join(path, constants.OBD_FILE_NAME)
-    if os.path.isfile(obd_file):  # TODO: more check
+    if valid_obd_file(obd_file):
         if debug:
             print("process: %s" % obd_file)
         df = pd.read_csv(obd_file, error_bad_lines=False, engine='python', skipfooter=1)
