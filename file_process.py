@@ -386,6 +386,8 @@ def process_data_main(data_path, frequency, rolling_window_size=100):
             continue
 
         # TODO: skip the 'temp' folder that are created by the 'clean' command
+        if constants.TEMP_FOLDER in root:
+            continue
 
         good = False
         for f in files:

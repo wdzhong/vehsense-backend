@@ -40,7 +40,7 @@ def clean_file(input_string, configs=None):
             print("top folder is required")
             return
 
-        temp_folder = options.get('-temp', os.path.join(top_folder, 'temp'))
+        temp_folder = options.get('-temp', os.path.join(top_folder, constants.TEMP_FOLDER))
         acc_need_valid = options.get('-acc', "True")
         gyro_need_valid = options.get('-gyro', "True")
         obd_need_valid = options.get('-obd', "False")

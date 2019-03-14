@@ -24,6 +24,8 @@ GRAVITY_FILE_NAME = 'raw_grav.txt'
 ROTATION_FILE_NAME = 'raw_rot.txt'
 MAGNET_FILE_NAME = 'raw_mag.txt'
 
+TEMP_FOLDER = 'TEMP_TEMP_TEMP'
+
 FILTERED_ACC_FILE = 'filtered_acc.pickle'
 
 # the file that exists in each trip folder containing the pothole info along the trip
