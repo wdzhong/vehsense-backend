@@ -586,6 +586,43 @@ def parse_arguments():
     return data_path, args.require_obd, args.overwrite
 
 
+def calibration_cmd(input_str, configs=None):
+    if input_str == 'syntax':
+        msg = """calibration -d directory [-obd require_obd=False] [-o overwrite=False]
+
+        -obd require_obd=False: If True, then obd file is needed for calibration
+        -o overwrite=False: If True, then recalculate and overwrite existing calibration parameter file.
+        """
+        print(msg)
+        return
+
+    from helper import convert_to_map
+    options = convert_to_map(input_str)
+    data_path = options.get('-d', None)
+
+    if not data_path and configs:
+        data_path = configs['data_path']
+
+    if not data_path:
+        print("data path is required")
+        return
+
+    require_obd = options.get('-obd', 'False')
+    overwrite = options.get('-o', 'False')
+
+    if require_obd.lower() == 'true':
+        require_obd = True
+    else:
+        require_obd = False
+
+    if overwrite.lower() == 'true':
+        overwrite = True
+    else:
+        overwrite = False
+
+    calibration(data_path, require_obd, overwrite)
+
+
 if __name__ == '__main__':
     data_path, require_obd, overwrite = parse_arguments()
     calibration(data_path, require_obd, overwrite=overwrite)

@@ -18,6 +18,7 @@ from preprocess import preprocess
 from backup import backup
 from size_cmd import size_cmd
 from new_cmd import new_cmd
+from calibration import calibration_cmd
 
 from utils import remove_files_matching
 
@@ -32,9 +33,11 @@ commands_dict["exit"] = "exits the program"
 commands_dict["unzip"] = "decompress the specified file, or compressed files under specified directory."
 commands_dict["preprocess"] = "preprocess the files in the specified directory."
 commands_dict["rm"] = "remove files meeting specified conditions from the given directory"
+commands_dict["calibration"] = "Get coordinates alignment parameters for trips"
 
 cmd_list = {"clean": clean_file, "size": size_cmd, "new": new_cmd,
-            "backup": backup, "unzip": decompress_file, "preprocess": preprocess}
+            "backup": backup, "unzip": decompress_file, "preprocess": preprocess,
+            "calibration": calibration_cmd}
 
 
 def helper():
