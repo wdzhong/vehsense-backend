@@ -28,7 +28,7 @@ commands_dict["help cmd"] = "displays the syntax and description for the command
 commands_dict["size"] = "display overall size, and size for each user"
 commands_dict["new"] = "show newly added data since last time running this command or specified time point"
 commands_dict["backup"] = "backup data. Ask for backup location if [-d] is not specified, and save it for future use."
-commands_dict["exit"] = "exits VehSense backend."
+commands_dict["exit"] = "exits the program"
 commands_dict["unzip"] = "decompress the specified file, or compressed files under specified directory."
 commands_dict["preprocess"] = "preprocess the files in the specified directory."
 commands_dict["rm"] = "remove files meeting specified conditions from the given directory"
@@ -44,9 +44,9 @@ def helper():
     print("Usage: \"help [cmd]\" or simply \"cmd\" for function syntax.\n")
     print("These are the VehSense commands used for various tasks:\n")
 
-    longest_cmd = max(cmd_list.keys(), key=len)
+    longest_cmd = max(commands_dict.keys(), key=len)
 
-    for command in sorted(cmd_list):
+    for command in sorted(commands_dict):
         prefix = " "
         preferredWidth = 100
         wrapper = textwrap.TextWrapper(initial_indent=prefix,
