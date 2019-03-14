@@ -230,13 +230,15 @@ def process_obd(obd_df, path, start_time, end_time, sampling_rate, rolling_windo
 
 
 def process_gps(gps_df, path, start_time, end_time, sampling_rate, rolling_window_size):
+
+def process_gps(df, path, start_time, end_time, sampling_rate, rolling_window_size):
     """
     Processes the 'gps.txt' file and create two new files, i.e.
         'gps_resampled.txt' and 'gps_smoothed.txt'
 
     Parameters
     ----------
-    gps_df : DataFrame
+    df : DataFrame
         dataframe of gps.txt file
 
     path : str
@@ -254,33 +256,45 @@ def process_gps(gps_df, path, start_time, end_time, sampling_rate, rolling_windo
     rolling_window_size : int
         The sliding window size in data smoothing
     """
-    # TODO: Add provider column in processed file
+    resampled_file = os.path.join(path, "resampled_gps.txt")
+
     system_time_header = "system_time"
-    resampled_file = os.path.join(path, "gps_resampled.txt")
-    gps_df[system_time_header] = gps_df[system_time_header].astype('int64')
-    gps_df = gps_df.loc[(gps_df[system_time_header] >= start_time)
-                        & (gps_df[system_time_header] <= end_time)]
-    gps_df[system_time_header] = gps_df[system_time_header] - start_time
-    gps_df[system_time_header] = pd.to_datetime(gps_df[system_time_header], unit='ms')
-    gps_df = gps_df.resample(sampling_rate, on=system_time_header).mean()
-    pattern = '%Y-%m-%d %H:%M:%S.%f'
-    gps_df.to_csv(resampled_file)
+    df = df.loc[df['provider'] == "gps"]
+    df[system_time_header] = df[system_time_header].astype('int64')
+    df = df.loc[(df[system_time_header] >= start_time)
+                        & (df[system_time_header] <= end_time)]
 
-    gps_df1 = pd.read_csv(resampled_file)
-    for i in gps_df1.index.tolist():
-        a = datetime.strptime(gps_df1.loc[i, system_time_header], pattern)
-        a = int(a.microsecond / 1000)
-        x = gps_df1.at[i, system_time_header]
-        gps_df1.at[i, system_time_header] = a + \
-            (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
-    gps_df1.to_csv(resampled_file, index=False)
+    # https://stackoverflow.com/questions/44305794/pandas-resample-data-frame-with-fixed-number-of-rows
+    num_of_resamples = (end_time - start_time) // 1000 * sampling_rate
+    time_new = np.linspace(start_time, end_time, num_of_resamples)
 
-    smoothed_file = os.path.join(path, "gps_smoothed.txt")
-    gps_df1 = gps_df1.dropna()
-    gps_df1 = gps_df1.interpolate(method='linear')
-    gps_df1 = gps_df1[["system_time", "lat", "lon", "speed", "bearing"]]
-    gps_df1 = gps_df1.rolling(rolling_window_size, min_periods=1).mean()
-    gps_df1.to_csv(smoothed_file, index=False)
+    num_of_rows, num_of_columns = df.values.shape
+
+    # do not have 'provider' yet
+    resampled_data = np.zeros((num_of_resamples, num_of_columns - 1))
+
+    raw_data = df.values
+    time_old = raw_data[:, 1].tolist()
+    for col in range(num_of_columns - 1):  # The last column is 'provider'
+        col_old = raw_data[:, col].tolist()
+        resampled_data[:, col] = np.interp(time_new, time_old, col_old)
+
+    df = pd.DataFrame(resampled_data, columns=df.columns[0: -1])
+    df['provider'] = 'gps'
+    df.to_csv(resampled_file, index=False)
+
+    # df[system_time_header] = pd.to_datetime(df[system_time_header], unit='ms')
+    # df = df.resample(sampling_rate, on=system_time_header).mean()
+    # df = df.interpolate(method='linear')  # this cannot even guarantee that different data has the same number of rows of data
+    # df['provider'] = 'gps'
+    # df.to_csv(resampled_file, index=False)
+
+    smoothed_file = os.path.join(path, "smoothed_gps.txt")
+    # df = df.dropna()
+
+    df = df[df.columns[0: -1]].rolling(rolling_window_size, min_periods=1).mean()
+    df['provider'] = 'gps'
+    df.to_csv(smoothed_file, index=False)
 
 
 def sub_dir_path(d):
