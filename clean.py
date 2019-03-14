@@ -83,15 +83,15 @@ def clean_all(root, force_delete, acc_need_valid, gyro_need_valid, obd_need_vali
     min_duration: int
         The minimum duration/length of a good trip
     """
-    for root, _, _ in os.walk(root):
+    for _root, _, _ in os.walk(root):
         # TODO: this will prevent the program working on a single trip directly
-        if root == root:
+        if _root == root:
             continue
 
-        if root.startswith(temp_folder):
+        if _root.startswith(temp_folder):
             continue
 
-        clean_single_folder(root, force_delete, acc_need_valid, gyro_need_valid, obd_need_valid, gps_max_interval, temp_folder, min_duration)
+        clean_single_folder(_root, force_delete, acc_need_valid, gyro_need_valid, obd_need_valid, gps_max_interval, temp_folder, min_duration)
 
 
 def clean_single_folder(root, force_delete, acc_need_valid, gyro_need_valid, obd_need_valid, gps_max_interval, temp_folder, min_duration):
