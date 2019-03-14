@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from helper import convert_to_map
+from helper import convert_to_map, valid_obd_file, valid_gps_file
 import constants
 from utils import read_csv_file
 
@@ -193,12 +193,10 @@ def valid_obd(root):
     True if the file is valid; False, otherwise
     """
     obd_file = os.path.join(root, constants.OBD_FILE_NAME)
-    if not os.path.isfile(obd_file):
+    if not valid_obd_file(obd_file):
         if debug:
             print("Invalid obd file %s" % obd_file)
         return False
-
-    # TODO: more check
 
     return True
 
@@ -224,9 +222,9 @@ def valid_gps(root, gps_max_interval, min_duration):
         True if the gps file is good. Fasle, otherwise.
     """
     gps_file = os.path.join(root, constants.GPS_FILE_NAME)
-    if not os.path.isfile(gps_file):
+    if not valid_gps_file(gps_file):
         if debug:
-            print("no gps file %s" % root)
+            print("invalid gps file: %s" % root)
         return False
 
     time_speed = read_csv_file(gps_file, columns=[1, 4])
