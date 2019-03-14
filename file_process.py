@@ -161,14 +161,15 @@ def process_motion_sensor_data(sensor_file: str, path: str, start_time: int, end
     df_smoothed.to_csv(smoothed_file, index=False)
 
 
-def process_obd(obd_df, path, start_time, end_time, sampling_rate, rolling_window_size):
+
+def process_obd(df, path, start_time, end_time, sampling_rate, rolling_window_size):
     """
     Processes the 'raw_obd.txt' file and create two new files, i.e.
         'obd_resampled.txt' and 'obd_smoothed.txt'
 
     Parameters
     ----------
-    obd_df : DataFrame
+    df : DataFrame
         dataframe of raw_obd.txt file
 
     path : str
@@ -186,50 +187,44 @@ def process_obd(obd_df, path, start_time, end_time, sampling_rate, rolling_windo
     rolling_window_size : int
         The sliding window size in data smoothing
     """
-    resampled_file = os.path.join(path, "obd_resampled.txt")
+    resampled_file = os.path.join(path, "resampled_obd.txt")
     timestamp_header = 'timestamp'
-    sys_time_header = 'sys_time'
-    obd_df[timestamp_header] = obd_df[timestamp_header] - start_time
-    obd_df[timestamp_header] = pd.to_datetime(obd_df[timestamp_header], unit='ms')
-    #obd_df[timestamp_header] = obd_df[timestamp_header].astype(np.int64)
-    obd_df = obd_df.dropna(thresh=1, axis='columns')
-    obd_df['RPM'] = obd_df['RPM'].str.strip("RPM").astype('int64')
-    obd_df['Speed'] = obd_df['Speed'].str.strip("km/h").astype('int64')
-    obd_df = obd_df.rename(index=str, columns={timestamp_header: sys_time_header})
-    obd_df = obd_df.resample(sampling_rate, on=sys_time_header).mean()
-    obd_df = obd_df.dropna()
-    # TODO: include quote in fields for to_csv
-    obd_df.to_csv(resampled_file)
+    df[timestamp_header] = df[timestamp_header].astype('int64')
+    df = df.loc[(df[timestamp_header] >= start_time)
+                    & (df[timestamp_header] <= end_time)]
 
-    obd_df1 = pd.read_csv(resampled_file)
-    obd_df['RPM'] = obd_df['RPM'].astype('str') + 'RPM'
-    obd_df['Speed'] = obd_df['Speed'].astype('str') + 'km/h'
-    obd_df.to_csv(resampled_file)
-    pattern = '%Y-%m-%d %H:%M:%S.%f'
-    for i in obd_df1.index.tolist():
-        a = datetime.strptime(obd_df1.loc[i, sys_time_header], pattern)
-        a = int(a.microsecond/1000)
-        x = obd_df1.at[i, sys_time_header]
-        obd_df1.at[i, sys_time_header] = a + \
-            (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
-    obd_df1.to_csv(resampled_file, index=False)
+    # df = df.dropna(thresh=1, axis='columns')
+    df['RPM'] = df['RPM'].str.strip("RPM").astype('int64')
+    df['Speed'] = df['Speed'].str.strip("km/h").astype('int64')
 
-    smoothed_file = os.path.join(path, "obd_smoothed.txt")
-    obd_df1 = obd_df1.dropna()
-    obd_df1 = obd_df1.interpolate(method='linear')
-    obd_df1 = obd_df1.rolling(rolling_window_size, min_periods=1).mean()
-    for i in obd_df1.index.tolist():
-        x = obd_df1.at[i, sys_time_header]
-        if (x % 100 >= 50):
-            obd_df1.at[i, sys_time_header] = int(x / 100) * 100 + 100
-        else:
-            obd_df1.at[i, sys_time_header] = int(x / 100) * 100
-    obd_df1 = obd_df1.rename(index=str, columns={sys_time_header: timestamp_header})
-    obd_df1 = obd_df1.drop_duplicates(subset=[timestamp_header], keep=False)
-    obd_df1.to_csv(smoothed_file, index=False)
+    # resample and linear interpolate
+    # https://stackoverflow.com/questions/44305794/pandas-resample-data-frame-with-fixed-number-of-rows
+    num_of_resamples = (end_time - start_time) // 1000 * sampling_rate
+    time_new = np.linspace(start_time, end_time, num_of_resamples)
 
+    num_of_rows, num_of_columns = df.values.shape
+    resampled_data = np.zeros((num_of_resamples, num_of_columns))
 
-def process_gps(gps_df, path, start_time, end_time, sampling_rate, rolling_window_size):
+    raw_data = df.values
+    time_old = raw_data[:, 0].tolist()
+    for col in range(num_of_columns):
+        col_old = raw_data[:, col].tolist()
+        resampled_data[:, col] = np.interp(time_new, time_old, col_old)
+
+    df = pd.DataFrame(resampled_data, columns=df.columns)
+    # TODO: add these two if needed
+    # df['RPM'] = df['RPM'].astype('str') + 'RPM'
+    # df['Speed'] = df['Speed'].astype('str') + 'km/h'
+    df.to_csv(resampled_file, index=False)
+
+    smoothed_file = os.path.join(path, "smoothed_obd.txt")
+    # df = df.dropna()
+    df = df.rolling(rolling_window_size, min_periods=1).mean()
+
+    # TODO: might need
+    # df = df.drop_duplicates(subset=[timestamp_header], keep=False)
+    df.to_csv(smoothed_file, index=False)
+
 
 def process_gps(df, path, start_time, end_time, sampling_rate, rolling_window_size):
     """
