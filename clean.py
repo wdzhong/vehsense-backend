@@ -242,6 +242,11 @@ def valid_gps(root, gps_max_interval, min_duration):
             print("Trip is too short: %.2f minutes." % (trip_duration / 60.0))
         return False
 
+    if debug:
+        print("Trip: %s" % root)
+        print("\tAverage interval of GPS samples: %.2f seconds, which is good." % ave_time)
+        print("\tTrip length is: %.2f minutes." % (trip_duration / 60.0))
+
     return True
 
 
