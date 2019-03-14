@@ -51,9 +51,17 @@ def get_start_end_time(folder):
         start = max(int(df[system_time].head(1)), start)
         end = min(int(df[system_time].tail(1)), end)
 
+    timestamp = "timestamp"
+    if constants.OBD_FILE_NAME in files:
+        obd_file = os.path.join(folder, constants.OBD_FILE_NAME)
+        df = pd.read_csv(obd_file, error_bad_lines=False, engine='python', skipfooter=1)
+        start = max(int(df[timestamp].head(1)), start)
+        end = min(int(df[timestamp].tail(1)), end)
+
     if debug:
         print("start and end time: %d, %d" % (start, end))
 
+    # TODO: round to the nearest second
     return start, end
 
 
@@ -76,8 +84,9 @@ def process_data(path: str, sampling_rate: int, rolling_window_size: int):
     -------
     True if process succeeds; False, otherwise.
     """
+    if debug:
+        print("process data: %s" % path)
 
-    # get the shared start time and end time
     start_time, end_time = get_start_end_time(path)
 
     sensor_type = ['acc', 'gyro', 'mag', 'rot', 'grav']
@@ -86,15 +95,21 @@ def process_data(path: str, sampling_rate: int, rolling_window_size: int):
         sensor_file = os.path.join(path, sensor_prefix + sensor + '.txt')
         if os.path.isfile(sensor_file):
             if debug:
+                print("process: %s" % sensor_file)
             process_motion_sensor_data(sensor_file, path, start_time, end_time, sampling_rate, rolling_window_size, sensor)
 
     gps_file = os.path.join(path, constants.GPS_FILE_NAME)
     if os.path.isfile(gps_file):
+        if debug:
+            print("process: %s" % gps_file)
+        # read_csv('x.csv', parse_dates=[0], index_col=0, squeeze=True)
         df = pd.read_csv(gps_file, error_bad_lines=False, engine='python', skipfooter=1)
         process_gps(df, path, start_time, end_time, sampling_rate, rolling_window_size)
 
     obd_file = os.path.join(path, constants.OBD_FILE_NAME)
     if os.path.isfile(obd_file):  # TODO: more check
+        if debug:
+            print("process: %s" % obd_file)
         df = pd.read_csv(obd_file, error_bad_lines=False, engine='python', skipfooter=1)
         process_obd(df, path, start_time, end_time, sampling_rate, rolling_window_size)
 
@@ -127,7 +142,7 @@ def process_motion_sensor_data(sensor_file: str, path: str, start_time: int, end
         The sliding window size in data smoothing
 
     sensor : str
-        The name of the sensor to be delt with, i.e. ['acc', 'gyro', 'rot', 'mag', 'grav'],
+        The name of the sensor to be dealt with, i.e. ['acc', 'gyro', 'rot', 'mag', 'grav'],
         that have been used in the filename and the column name.
     """
     df = pd.read_csv(sensor_file, error_bad_lines=False, engine='python', skipfooter=1)

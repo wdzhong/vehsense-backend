@@ -78,6 +78,7 @@ def clean_all(force_delete, acc_need_valid, gyro_need_valid, obd_need_valid, top
 
     """
     for root, _, _ in os.walk(top_folder):
+        # TODO: this will prevent the program working on a single trip directly
         if root == top_folder:
             continue
 
