@@ -26,16 +26,16 @@ The program should be running like a prompt which can accept predefined commands
 - [ ] **clients**: list all clients' names
 - [x] **exit**: terminal the program. Save current status.
 - [ ] **new [-t mm/dd/yyyy]**: show newly added data (trips) since the specified `time` point, last time running this command, or `yesterday`.
-- [ ] **preprocess \[-d directory=data] \[-f frequency=200]**: preprocess files under the given directory. This may be called after `unzip` with merge. Aand `clean` should have been called as well. Sync the start timestamps of different type of data and choose the latest one (on which may add another couple of seconds) as the start point of the current data. Then carry out interpolation.
+- [x] **preprocess \[-d directory=data] \[-f frequency=200]**: preprocess files under the given directory. This may be called after `unzip` with merge. Aand `clean` should have been called as well. Sync the start timestamps of different type of data and choose the latest one (on which may add another couple of seconds) as the start point of the current data. Then carry out interpolation.
   - `-d directory` The directory to deal with
   - `-f frequency=200`: The frequency we want to interpolate. Default is 200Hz, i.e., 5ms
   - `-w rolling_window_size=100` : The size of sliding window in data smoothing.
   - `-c clean=False`: If `True`, then it will call `clean` first before `preprocess`.
-- [ ] **rm [directory=data] prefix suffix \[-f force=False]**: remove files that meet the given requirement under given directory:
+- [x] **rm [directory=data] prefix suffix \[-f force=False]**: remove files that meet the given requirement under given directory:
     - `directory`: The directory to start with. Default is `./data`.
     - `prefix`: The prefix of files to be removed, which can be empty, i.e. `""`.
     - `suffix`: The suffix of files to be removed, which can be empty, i.e. `""`.
-    - `-f force=False`: If `True`, then remove files without user confirm.
+    - (**TODO**) `-f force=False`: If `True`, then remove files without user confirm.
 - [ ] **size**: overall size, and size for each user
 - [x] **unzip \[-f filename] \[-d directory=data] \[--compress-type='.zip'] \[--delete=False] \[--merge=True] \[--delete-unzip=True]**: decompress the speficied file, or all compressed files under specified directory and all sub folders.
   - If `--delete` is set to be `True`, then the original compressed file(s) will be deleted after decompression.
