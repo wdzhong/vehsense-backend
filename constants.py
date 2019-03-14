@@ -20,6 +20,9 @@ CALIBRATION_FILE_NAME = 'calibration_para.txt'
 CALI_PARA_FILE = 'cali_para.txt'
 OBD_FILE_NAME = 'raw_obd.txt'
 GYRO_FILE_NAME = 'raw_gyro.txt'
+GRAVITY_FILE_NAME = 'raw_grav.txt'
+ROTATION_FILE_NAME = 'raw_rot.txt'
+MAGNET_FILE_NAME = 'raw_mag.txt'
 
 FILTERED_ACC_FILE = 'filtered_acc.pickle'
 

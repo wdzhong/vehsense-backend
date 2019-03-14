@@ -34,7 +34,7 @@ def get_start_end_time(folder):
     sys_time = "sys_time"
 
     # TODO: replace file names with constants
-    sensor_type = [constants.ACC_FILE_NAME, constants.GYRO_FILE_NAME, "raw_mag.txt", "raw_grav", "raw_rot.txt"]
+    sensor_type = [constants.ACC_FILE_NAME, constants.GYRO_FILE_NAME, constants.MAGNET_FILE_NAME, constants.GRAVITY_FILE_NAME, constants.ROTATION_FILE_NAME]
 
     files = os.listdir(folder)
     for f in sensor_type:
