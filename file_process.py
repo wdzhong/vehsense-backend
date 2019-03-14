@@ -33,8 +33,8 @@ def get_start_end_time(folder):
 
     sys_time = "sys_time"
 
-    # TODO: add more sensor
-    sensor_type = [constants.ACC_FILE_NAME, constants.GYRO_FILE_NAME]
+    # TODO: replace file names with constants
+    sensor_type = [constants.ACC_FILE_NAME, constants.GYRO_FILE_NAME, "raw_mag.txt", "raw_grav", "raw_rot.txt"]
 
     files = os.listdir(folder)
     for f in sensor_type:
@@ -85,7 +85,8 @@ def process_data(path: str, sampling_rate: int, rolling_window_size: int):
     for sensor in sensor_type:
         sensor_file = os.path.join(path, sensor_prefix + sensor + '.txt')
         if os.path.isfile(sensor_file):
-            process_motion_sensor_data(sensor_file, ref_df, path, start_time, end_time, sampling_rate, rolling_window_size, sensor)
+            if debug:
+            process_motion_sensor_data(sensor_file, path, start_time, end_time, sampling_rate, rolling_window_size, sensor)
 
     gps_file = os.path.join(path, constants.GPS_FILE_NAME)
     if os.path.isfile(gps_file):
@@ -103,7 +104,7 @@ def process_data(path: str, sampling_rate: int, rolling_window_size: int):
 def process_motion_sensor_data(sensor_file: str, path: str, start_time: int, end_time: int, sampling_rate: int, rolling_window_size: int, sensor: str):
     """
     Process a single motion sensor data file, and create two new files, i.e.
-        '[sensor_name]_resampled.txt' and '[sensor_name]_smoothed.txt'
+        'resampled_[sensor_name].txt' and 'smoothed_[sensor_name].txt'
 
     Parameters
     ----------
@@ -130,36 +131,39 @@ def process_motion_sensor_data(sensor_file: str, path: str, start_time: int, end
         that have been used in the filename and the column name.
     """
     df = pd.read_csv(sensor_file, error_bad_lines=False, engine='python', skipfooter=1)
-    resampled_file = os.path.join(path, sensor + "_resampled.txt")
+    resampled_file = os.path.join(path, "resampled_" + sensor + ".txt")
     sys_time_header = 'sys_time'
     df[sys_time_header] = df[sys_time_header].astype('int64')
     df = df.loc[(df[sys_time_header] >= start_time)
                         & (df[sys_time_header] <= end_time)]
-    df[sys_time_header] = df[sys_time_header] - start_time
-    df[sys_time_header] = pd.to_datetime(df[sys_time_header], unit='ms')
-    df = df.resample(sampling_rate, on=sys_time_header).mean()
-    df.to_csv(resampled_file)
 
-    df = pd.read_csv(resampled_file)
-    df = df.dropna()
-    pattern = '%Y-%m-%d %H:%M:%S.%f'
-    for i in df.index.tolist():
-        a = datetime.strptime(df.loc[i, sys_time_header], pattern)
-        a = int(a.microsecond/1000)
-        x = df.at[i, sys_time_header]
-        df.at[i, sys_time_header] = a + \
-            (int(calendar.timegm(time.strptime(x, pattern))) * 1000)
+    num_of_resamples = (end_time - start_time) // 1000 * sampling_rate
+    time_new = np.linspace(start_time, end_time, num_of_resamples)
+
+    num_of_rows, num_of_columns = df.values.shape
+    resampled_data = np.zeros((num_of_resamples, num_of_columns))
+
+    raw_data = df.values
+    time_old = raw_data[:, 1].tolist()
+    for col in range(num_of_columns):
+        col_old = raw_data[:, col].tolist()
+        resampled_data[:, col] = np.interp(time_new, time_old, col_old)
+
+    # TODO: use the time_new to replace the time column?
+
+    df = pd.DataFrame(resampled_data, columns=df.columns)
+
     df.to_csv(resampled_file, index=False)
 
-    smoothed_file = os.path.join(path, sensor + "_smoothed.txt")
-    df_smoothed = df.dropna()
-    df_smoothed = df_smoothed.dropna()
-    # df_smoothed = df.merge(ref_df, how='left')
-    df_smoothed = df.interpolate(method='linear')
-    df_smoothed = df.rolling(rolling_window_size, min_periods=1).mean()
-    df_smoothed = df[["sys_time", "raw_x_" + sensor, "raw_y_" + sensor, "raw_z_" + sensor]]
-    df_smoothed.to_csv(smoothed_file, index=False)
 
+    ## smooth
+    smoothed_file = os.path.join(path, "smoothed_" + sensor + ".txt")
+
+    # TODO: the time columns should not be changed by the rolling
+    df = df.rolling(rolling_window_size, min_periods=1).mean()
+    # df = df[['timestamp', sys_time_header, 'abs_timestamp', "raw_x_" + sensor, "raw_y_" + sensor, "raw_z_" + sensor]]
+
+    df.to_csv(smoothed_file, index=False)
 
 
 def process_obd(df, path, start_time, end_time, sampling_rate, rolling_window_size):
