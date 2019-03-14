@@ -57,7 +57,7 @@ def get_start_end_time(folder):
     return start, end
 
 
-def process_data(path, sampling_rate, rolling_window_size):
+def process_data(path: str, sampling_rate: int, rolling_window_size: int):
     """
     Process files under given path accordingly.
 
@@ -66,8 +66,8 @@ def process_data(path, sampling_rate, rolling_window_size):
     path: str
         path of individual data folder to process
 
-    sampling_rate : str
-        Default is
+    sampling_rate : int
+        The resample rate, whose unit is Hz.
 
     rolling_window_size : int
         Default is 50.
@@ -100,7 +100,7 @@ def process_data(path, sampling_rate, rolling_window_size):
     return True
 
 
-def process_motion_sensor_data(sensor_file: str, path, start_time, end_time, sampling_rate, rolling_window_size, sensor):
+def process_motion_sensor_data(sensor_file: str, path: str, start_time: int, end_time: int, sampling_rate: int, rolling_window_size: int, sensor: str):
     """
     Process a single motion sensor data file, and create two new files, i.e.
         '[sensor_name]_resampled.txt' and '[sensor_name]_smoothed.txt'
@@ -119,8 +119,8 @@ def process_motion_sensor_data(sensor_file: str, path, start_time, end_time, sam
     end_time : int
         And data with timestamps larger than end time will NOT be used
 
-    sampling_rate : str
-        The resampling rate to be used for interpolation
+    sampling_rate : int
+        The resampling rate to be used for interpolation, Hz
 
     rolling_window_size : int
         The sliding window size in data smoothing
@@ -180,8 +180,8 @@ def process_obd(obd_df, path, start_time, end_time, sampling_rate, rolling_windo
     end_time : int
         And data with timestamps larger than end time will NOT be used
 
-    sampling_rate : str
-        The resampling rate to be used for interpolation
+    sampling_rate : int
+        The resampling rate to be used for interpolation, Hz
 
     rolling_window_size : int
         The sliding window size in data smoothing
@@ -248,8 +248,8 @@ def process_gps(gps_df, path, start_time, end_time, sampling_rate, rolling_windo
     end_time : int
         And data with timestamps larger than end time will NOT be used
 
-    sampling_rate : str
-        The resampling rate to be used for interpolation
+    sampling_rate : int
+        The resampling rate to be used for interpolation, Hz
 
     rolling_window_size : int
         The sliding window size in data smoothing
@@ -311,12 +311,18 @@ def process_data_main(data_path, frequency, rolling_window_size=100):
     frequency : int/float
         resampling frequency
     """
-    sampling_rate = str(1000.0 / frequency)
-    sampling_rate = sampling_rate + 'L'
+    # 100.0 // 5 = 20.0, instead of 20
+    # sampling_rate = str(int(1000 // frequency))
+    # https://stackoverflow.com/questions/17001389/pandas-resample-documentation
+    # http://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html
+    # 'L' or 'ms', stands for milliseconds
+    # sampling_rate = sampling_rate + 'L'
 
     for root, folders, files in os.walk(data_path):
         if root == data_path:
             continue
+
+        # TODO: skip the 'temp' folder that are created by the 'clean' command
 
         good = False
         for f in files:
@@ -328,7 +334,7 @@ def process_data_main(data_path, frequency, rolling_window_size=100):
 
         # TODO: check if the folder has been preprocessed before or not
 
-        process_data(root, sampling_rate, rolling_window_size)
+        process_data(root, int(frequency), rolling_window_size)
 
 
 if __name__ == "__main__":
