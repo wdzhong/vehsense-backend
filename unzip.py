@@ -64,10 +64,10 @@ def decompress_file(input_string, configs=None):
         unzip_file(filename, delete_after_decompress, compress_type)
         return
     mypath = dirname
-    process_directory(mypath, delete_after_decompress, compress_type)
+    process_directory(mypath, delete_after_decompress, compress_type, merge, delete_unzip)
     # Merge files
-    if merge == "True":
-        merge_directories(mypath, delete_unzip)
+    # if merge == "True":
+    #     merge_directories(mypath, delete_unzip)
 
 
 def merge_directories(mypath, delete_unzip):
@@ -88,7 +88,7 @@ def merge_directories(mypath, delete_unzip):
             merge_single_directory(root, delete_unzip)
 
 
-def process_directory(mypath, delete_after_decompress, compress_type):
+def process_directory(mypath, delete_after_decompress, compress_type, merge, delete_unzip):
     """
     unzip all files under given directionry and all its sub directories
 
@@ -123,6 +123,9 @@ def process_directory(mypath, delete_after_decompress, compress_type):
                 # TODO: only deal with certain type of data that we are interested
                 fil = os.path.join(root, fil)
                 unzip_file(fil, delete_after_decompress, compress_type)
+
+        if merge.lower() == "true":
+            merge_single_directory(root, delete_unzip)
 
 
 def unzip_file(fil, delete_after_decompress, compress_type):
