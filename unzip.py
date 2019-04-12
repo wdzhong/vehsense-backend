@@ -108,6 +108,7 @@ def process_directory(mypath, delete_after_decompress, compress_type, merge, del
         if not files:
             continue
 
+        counter = defaultdict(int)
         if debug:
             print("unzip: deal with %s" % root)
         for fil in files:
@@ -121,9 +122,18 @@ def process_directory(mypath, delete_after_decompress, compress_type, merge, del
 
             elif fil.endswith(compress_type):
                 # TODO: only deal with certain type of data that we are interested
+                for prefix in data_type:
+                    if prefix in fil:
+                        counter[prefix] += 1
+                        break
                 fil = os.path.join(root, fil)
                 unzip_file(fil, delete_after_decompress, compress_type)
+            else:
+                # some unexpected files exist
+                print("unexpected file: %s" %  fil)
 
+        print(counter, end=", total: ")
+        print(sum(counter.values()))
         if merge.lower() == "true":
             merge_single_directory(root, delete_unzip)
 
@@ -153,7 +163,7 @@ def unzip_file(fil, delete_after_decompress, compress_type):
         with open(uncompressed_filename, "wb") as fp:
             fp.writelines(data_lines)
 
-        if (delete_after_decompress == "True"):
+        if delete_after_decompress.lower() == "true":
             if debug:
                 print("deleting ", fil)
             os.remove(fil)
@@ -198,7 +208,7 @@ def merge_single_directory(file_path, delete_unzip):
         for f in files:
             cur_number = get_int_from_str(f)
             if last_number and last_number + 1 != cur_number:
-                msg = "missing file: " + prefix + "_" + str(last_number + 1) + '.txt'
+                msg = "missing file: " + prefix + "_" + str(last_number + 1) + "--" + str(cur_number - 1) + '.txt'
                 print(msg)
             last_number = cur_number
 
@@ -234,5 +244,5 @@ def get_int_from_str(string):
         ans = int(result)
         return ans
     except:
-        print("no digit found in given string: %s" % string)
+        # print("no digit found in given string: %s" % string)
         return 0  # TODO: return 0 might cause issue if there is already a file with 0
