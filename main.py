@@ -120,6 +120,8 @@ def main(args):
 
     while True:
         input_string = input(">>").rstrip()
+        if not input_string:
+            continue
         input_string = input_string.replace("=", " ")
         input_segments = input_string.split()
         received_cmd = input_segments[0]
