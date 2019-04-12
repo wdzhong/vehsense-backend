@@ -12,6 +12,7 @@ import traceback
 import os
 import pickle
 from collections import defaultdict
+import time
 # import textwrap
 
 from helper import convert_to_map
@@ -132,7 +133,7 @@ def process_directory(mypath, delete_after_decompress, compress_type, merge, del
                 # some unexpected files exist
                 print("unexpected file: %s" %  fil)
 
-        print(counter, end=", total: ")
+        print('\t', counter, end=", total: ")
         print(sum(counter.values()))
         if merge.lower() == "true":
             merge_single_directory(root, delete_unzip)
@@ -160,8 +161,18 @@ def unzip_file(fil, delete_after_decompress, compress_type):
         zip_file = gzip.open(fil)
         data_lines = zip_file.readlines()
         uncompressed_filename = fil[:-len(compress_type)]
-        with open(uncompressed_filename, "wb") as fp:
-            fp.writelines(data_lines)
+        fp = open(uncompressed_filename, "wb")
+        fp.writelines(data_lines)
+        # with open(uncompressed_filename, "wb") as fp:
+        #     fp.writelines(data_lines)
+        fp.close()
+
+        # to wait for slow disk writing
+        # otherwise, some files won't get unzipped and saved properly
+        # the length of the sleep can be adjusted though.
+        while not fp.closed:
+            time.sleep(1)
+            continue
 
         if delete_after_decompress.lower() == "true":
             if debug:
