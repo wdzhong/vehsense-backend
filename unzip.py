@@ -188,7 +188,7 @@ def unzip_file(fil, delete_after_decompress, compress_type):
         # otherwise, some files won't get unzipped and saved properly
         # the length of the sleep can be adjusted though.
         while not fp.closed:
-            time.sleep(1)
+            time.sleep(0.5)
             continue
 
         if delete_after_decompress.lower() == "true":
