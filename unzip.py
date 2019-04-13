@@ -112,6 +112,23 @@ def process_directory(mypath, delete_after_decompress, compress_type, merge, del
         counter = defaultdict(int)
         if debug:
             print("unzip: deal with %s" % root)
+
+        # ignore folders that have all files uncompressed
+        uncompressed_before = True
+        for d_type in data_type:
+            got_one = False
+            for _file in files:
+                if d_type + ".txt" in _file:
+                    got_one = True
+                    break
+            if not got_one:
+                uncompressed_before = False
+                break
+
+        if uncompressed_before:
+            print("\tUnzipped before. Pass")
+            continue
+
         for fil in files:
             # important: delete (possible) old txt files so that they won't get merge again
             if fil.endswith('.txt'):
