@@ -13,7 +13,9 @@ The program should be running like a prompt which can accept predefined commands
 
 - [x] **help**: list all available commands and their short descriptions.
 - [x] **[cmd]** or **help [cmd]**: show details of `cmd` usage
-- [ ] **backup [-d directory]**: backup data. Ask for backup location if -d is not specified, and save it for future use.
+- [ ] **backup /path/to/data /path/to/backup**: backup data. The folder structure of original data needs to be kept. e.g., `/path/to/data/A/B -> /path/to/backup/data/A/B`.
+  - Need to figure out how to avoid backuping the same file for multiple times
+  - Eventually make this command run automatically, e.g. using [Crontab](https://www.howtogeek.com/101288/how-to-schedule-tasks-on-linux-an-introduction-to-crontab-files/).
 - [x] **calibration -d directory [-obd require_obd=False] [-o overwrite=False]**: Calculate the rotation matrix for coordinates alignment for all folders in the given directory and save the matrix into `calibration_para.txt` in corresponding folder:
   - `-d directory`: The directory to start with
   - `-obd require_obd=False`: If `True`, then `obd` file is needed to calculated the parameters
