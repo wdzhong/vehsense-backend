@@ -110,3 +110,7 @@ venv.bak/
 .idea
 
 playground.py
+
+data/
+data_backup/
+backup/
