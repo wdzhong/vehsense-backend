@@ -1,7 +1,0 @@
-"OBD_LOGS"
-"Connect to: 00:1D:A5:1B:5C:DE"
-"Connected"
-"IOException in data collection threadjava.io.IOException: bt socket closed, read return: -1 Timestamp: 1547609043184"
-"Connection Lost"
-"Connect to: 00:1D:A5:1B:5C:DE"
-"Connected"
