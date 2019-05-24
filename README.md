@@ -7,6 +7,7 @@ Deal with data collected from vehsense app.
 ## Requirements
 - `Python 3.x`
 - Packages: `numpy`, `pandas`, `matplotlib`, `statsmodels`
+- Download data from [Dropbox](https://www.dropbox.com/sh/8g6u7s77onvavnv/AABJD_Fn4l9lqWjpkuSift30a?dl=0) and put the data folder in the **root** directory. Don't push data to the remote to reduce the repo size.
 
 ## Road Map
 The program should be running like a prompt which can accept predefined commands (ordered alphabetically, except for the first two), e.g.
