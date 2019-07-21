@@ -139,6 +139,9 @@ def get_j(trip, acc, gravity_component, require_obd=False):
     j : vector
         1*3
     """
+    if debug:
+        print("Getting j...")
+
     j = [1.0] * 3
 
     # The reason to use deceleration is that deceleration usually happens ahead of
@@ -592,6 +595,11 @@ def calibration_cmd(input_str, configs=None):
 
         -obd require_obd=False: If True, then obd file is needed for calibration
         -o overwrite=False: If True, then recalculate and overwrite existing calibration parameter file.
+
+        E.g.
+            >> calibration -d ./data -obd True
+          which is the same as
+            >> calibration -d ./data -obd=True
         """
         print(msg)
         return

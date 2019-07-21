@@ -191,7 +191,7 @@ def main(args):
             else:
                 cmd_list[received_cmd](input_segments[1:], configs)
         else:
-            print("Unrecognized command. Enter \"help [cmd]\" for function syntax, \"help\" for list of available commands")
+            print("Unrecognized command. Use \"help\" to list all available commands, and then enter \"help [cmd]\" for function syntax")
 
 
 if __name__ == '__main__':

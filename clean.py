@@ -18,13 +18,15 @@ def clean_file(input_string, configs=None):
         options for clean command.
     """
     if input_string == "syntax":
-        msg = """clean -d directory [-acc=True] [-gps interval=5] [-gyro=True]
-            [-obd=False] [-f=False] [-temp path] [-len duration=10]
+        msg = """clean -d directory [-acc=True] [-gps interval=5] [-len duration=10]
+            [-gyro=True] [-obd=False] [-f=False] [-temp path=None]
 
-        -f force_delete=False: If True, then delete bad folder directly. Otherwise, move to temp folder. Default is False.
         -gps interval=5: The maximum average sampling interval of a good GPS.
-        -len min_duration=10: 
-        -temp path: The
+        -len min_duration=10: The minimum duration for a good trip, whose unit is minute.
+        -gyro=True: True if a gyro file should be treated as a necessary file for a good trip.
+        -obd=False: The same meaning as -gyro.
+        -f force_delete=False: If True, then delete bad folder directly. Otherwise, move to temp folder. Default is False.
+        -temp path=None: The path/directory to move all bad trips into.
             """
         print(msg)
     else:
@@ -81,7 +83,7 @@ def clean_all(root, force_delete, acc_need_valid, gyro_need_valid, obd_need_vali
         The temp folder to store the 'bad' trips data if they are not going to be force_deleted
 
     min_duration: int
-        The minimum duration/length of a good trip
+        The minimum duration/length of a good trip. Unit is minute.
     """
     for _root, _, _ in os.walk(root):
         # TODO: this will prevent the program working on a single trip directly
@@ -122,7 +124,7 @@ def clean_single_folder(root, force_delete, acc_need_valid, gyro_need_valid, obd
         The temp folder to store the 'bad' trips data if they are not going to be force_deleted
 
     min_duration: int
-        The minimum duration/length of a good trip
+        The minimum duration/length of a good trip. Unit is minute.
     """
     files = [f for f in os.listdir(root) if os.path.isfile(os.path.join(root, f)) and f != '.DS_Store']
     if not files:
@@ -214,7 +216,7 @@ def valid_gps(root, gps_max_interval, min_duration):
         The maximum sampling interval of a good trip.
 
     min_duration : int
-        The minimum duration of a good trip.
+        The minimum duration of a good trip. Unit is minute.
 
     Return
     ------
