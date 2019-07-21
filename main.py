@@ -92,6 +92,9 @@ def load_config(dir):
     """
     config_file = os.path.join(dir, 'config.txt')
 
+    if not os.path.isfile(config_file):
+        return {}
+
     configs = {}
     with open(config_file, 'r') as fp:
         for line in fp:
@@ -110,6 +113,7 @@ def main(args):
     print("Welcome to Vehsense backend utility. Enter \"help\" for list of available commands.")
 
     data_path = './data'
+    data_path = '/media/weida/Seagate8T/VehSenseTraffic/stampede'
     if args.data_path:
         data_path = args.data_path
     configs = load_config(data_path)
@@ -162,7 +166,7 @@ def main(args):
                     print("given folder does not exist.")
             else:
                 print("missing args")
-        elif received_cmd == 'dir':
+        elif received_cmd == 'dir' or received_cmd == 'pwd':
             print("current data path: %s" % configs['data_path'])
         elif received_cmd == 'rm':
             # to deal with empty string
