@@ -380,8 +380,15 @@ def remove_gravity_component(acc, gravity):
     if debug:
         print("Remove gravity component.")
 
-    for line in acc:
-        line[1:] -= gravity
+    # too slow
+    # for line in acc:
+    #     line[1:] -= gravity
+
+    # we can also use gravity.insert(0, 0.0), but it changes the value of gravity
+    expanded_gravity = [0.0]  # to make it the same size as the row in acc
+    expanded_gravity.extend(gravity)
+    acc -= expanded_gravity
+
     return acc
 
 
@@ -535,6 +542,9 @@ def calibration(data_path: str, require_obd: bool, overwrite=False) -> None:
     """
     for _root, _, _files in os.walk(data_path):
         if not _files or (len(_files) == 1 and '.DS_Store' in _files):
+            continue
+
+        if "TEMP_TEMP_TEMP" in _root:
             continue
 
         if constants.ACC_FILE_NAME not in _files:
